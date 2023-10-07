@@ -12,43 +12,53 @@ def get_Q_t(sigma_r=100, sigma_phi=100):
 
     return Q_t
 
-def initialize_landmark_position(mi, r, phi):
+def initializeLandmarkPosition(expected_state, r, phi):
     """Initializes the position of a landmark if it has not been seen before."""
-    mi_j_x = mi[0] + r*np.cos(phi + mi[2])
-    mi_j_y = mi[1] + r*np.sin(phi + mi[2])
+    expected_state_landmark_x = expected_state[0] + r*np.cos(phi + expected_state[2])
+    expected_state_landmark_y = expected_state[1] + r*np.sin(phi + expected_state[2])
 
-    mi = np.array([mi_j_x, mi_j_y]).reshape(2,1)
+    expected_state = np.array([expected_state_landmark_x, expected_state_landmark_y]).reshape(2,1)
 
-    return mi
+    return expected_state
 
-def get_delta(expected_state, expected_state_landmark):
-    return expected_state[:2] - expected_state_landmark
+def getDelta(expected_state, expected_state_landmark):
+    """Returns the difference between expected robot's position and the expected landmark's position."""
+    delta = (expected_state[:2] - expected_state_landmark).reshape(2, 1)
+    return delta
 
-def predict_observation(q, delta, mi_theta):
+def predictObservation(q, delta, state_theta):
+    """Returns the expected observation based on the expected robot's pose and the expected specific landmark's pose."""
     z_pred_x = np.sqrt(q)
-    z_pred_y = np.arctan2(delta[0], delta[1]) - mi_theta
-    z_pred = np.array([z_pred_x, z_pred_y]).reshape((2,1))
+    z_pred_y = np.arctan2(delta[0], delta[1]) - state_theta
+    z_pred = np.vstack((z_pred_x, z_pred_y))
 
     return z_pred
 
-# Creates and returns the F matrix
-def getF(j):
+def getF_x_landmark(j):
+    "Returns the F matrix, which maps the world state (robot + landmarks) to the robot state (only robot)."
     F_upper_left = np.eye(3)
-    F_upper_right = np.zeros((3, 2*j -2 +2 +2*NUM_LANDMARKS - 2*j))
+    F_upper_right = np.zeros((3, 2*j-2 +2 +2*(NUM_LANDMARKS - j)))
     F_upper = np.hstack((F_upper_left, F_upper_right))
+
     F_lower_left = np.zeros((2, 3 + 2*j -2))
     F_lower_center = np.eye(2)
-    F_lower_right = np.zeros((2*NUM_LANDMARKS - 2*j))
+    F_lower_right = np.zeros((2, 2*(NUM_LANDMARKS - j)))
     F_lower = np.hstack((F_lower_left, F_lower_center, F_lower_right))
-    F = np.vstack(F_upper, F_lower)
+    
+    F = np.vstack((F_upper, F_lower))
 
     return F
 
 def getH(q, delta, F):
-    H_middle = [[-np.sqrt(q)*delta[0], -np.sqrt(q)*delta[1],  0, np.sqrt(q)*delta[0], np.sqrt(q)*delta[1]],
-                [delta[1],             -delta[0],            -q, -delta[1],           delta[0]]]
+    """Returns the Jacobian of the expected observation function, for the specific landmark and the current robot's pose."""
+    delta_x = delta[0].item()
+    delta_y = delta[1].item()
+
+    H_middle = [[-np.sqrt(q)*delta_x, -np.sqrt(q)*delta_y,  0, np.sqrt(q)*delta_x, np.sqrt(q)*delta_y],
+                [delta_y,             -delta_x,            -q, -delta_y,           delta_x]]
     H_middle = np.array(H_middle).reshape((2, 5))
-    H = 1/q @ H_middle @ F
+
+    H = 1/q * H_middle @ F
 
     return H
 
@@ -66,12 +76,12 @@ def updateStateCovPred(K, H, expected_state_cov):
 
     return expected_state_cov
 
-def update_state_pred(state_pred, K, z, z_pred):
+def updateExpectedPred(expected_state, K, z, z_pred):
     """Updates the state prediction using the previous state prediction, the Kalman Gain and the real and expected observation of a specific landmark."""
 
-    state_pred = state_pred + K @ (z - z_pred)
+    expected_state = expected_state + K @ (z - z_pred)
 
-    return state_pred
+    return expected_state
 
 
 def correct(expected_state, expected_state_cov):
@@ -83,9 +93,10 @@ def correct(expected_state, expected_state_cov):
     j_seen = []
 
     # Step 2
-    observed_features = [[0,0], [1,1], [2,2], [3,3], [4,4]] # observed features
+    observed_features = np.array([[0.1,0.1], [1,1], [2,2], [3,3], [4,4]]) # observed features
     # Step 7
-    for i, z in enumerate(observed_features):
+    for i in range(len(observed_features)):
+        z = observed_features[i].reshape((2,1))
         r, phi = z
 
         # Step 8
@@ -93,30 +104,30 @@ def correct(expected_state, expected_state_cov):
         # Step 9
         if j not in j_seen:
             # Step 10
-            mi_landmark_pred = initialize_landmark_position(expected_state, r, phi)
+            mi_landmark_pred = initializeLandmarkPosition(expected_state, r, phi)
         
         # Step 11: endif
 
         # Step 12
-        delta = get_delta(expected_state, mi_landmark_pred)
+        delta = getDelta(expected_state, mi_landmark_pred)
 
         # Step 13
-        q = delta.T@delta
+        q = (delta.T@delta).item()
 
         # Step 14: Expected Observation
-        z_pred = predict_observation(q, delta, expected_state[2])
+        z_pred = predictObservation(q, delta, expected_state[2])
 
         # Step 15
-        F = getF(j)
+        F_x_landmark = getF_x_landmark(j)
 
         # Step 16: Jacobian of Expected Observation
-        H = getH(q, delta, F)
+        H = getH(q, delta, F_x_landmark)
 
         # Step 17: Kalman Fain
         K = getKalmanGain(expected_state_cov, H, Q)
 
         # Step 18: Expected State
-        state_pred = update_state_pred(state_pred, K, z, z_pred)
+        expected_state = updateExpectedPred(expected_state, K, z, z_pred)
 
         # Step 19: Expected Uncertainty Update
         expected_state_cov = updateStateCovPred(K, H, expected_state_cov)
@@ -124,7 +135,7 @@ def correct(expected_state, expected_state_cov):
     # Step 20: endfor
 
     # Step 20: Updated state
-    state = state_pred
+    state = expected_state
 
     # Step 21: Updated state covariance
     state_cov = expected_state_cov
