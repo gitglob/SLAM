@@ -7,5 +7,5 @@ Youtube link: https://www.youtube.com/playlist?list=PLgnQpQtFTOGQrZ4O5QzbIHgl3b1
 # 05. EKF SLAM
 
 To run SLAM:
-`python -m 05_EKF_SLAM.SLAM`
+`python -m EKF_SLAM.main`
 
