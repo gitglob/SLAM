@@ -5,12 +5,11 @@ import numpy as np
 from .prediction import predict
 from .correction import correct
 
-def get_Q_t(sigma_x=100, sigma_y=100, sigma_phi=100):
+def get_Q_t(sigma_x=100, sigma_phi=100):
     """Returns the uncertainty matrix of the sensors."""
-    Q_t = [[sigma_x**2,            0,             0], 
-           [0,            sigma_y**2,             0],
-           [0,                     0, sigma_phi**2]]
-    Q_t = np.array(Q_t).reshape(3,3)
+    Q_t = [[sigma_x**2,              0], 
+           [0,            sigma_phi**2]]
+    Q_t = np.array(Q_t).reshape(2,2)
 
     return Q_t
 
@@ -23,7 +22,8 @@ def main():
     time = np.linspace(0, 1, 11)
 
     # Initialize state
-    state = np.zeros((3, 1)) # x, y, θ
+    ebs = 1e-6
+    state = np.zeros((3, 1)) + ebs # x, y, θ
 
     # Initialize state covariance
     state_cov = np.zeros((3, 3))
@@ -48,7 +48,7 @@ def main():
         u = np.hstack((v, omega)).reshape((2,1))
 
         # Generate random measurement
-        z = np.random.rand(3,1)
+        z = np.random.rand(2,1)
 
         # Steps 2-3: Prediction
         expected_state, expected_state_cov = predict(state, state_cov, u, process_cov, dt)
