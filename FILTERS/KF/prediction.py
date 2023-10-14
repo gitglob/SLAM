@@ -25,18 +25,18 @@ def getB(dt):
     return B
 
 # Step 2
-def predictState(state, u, dt):
+def predictState(A, state, B, u, dt):
     """Predicts the new pose μ of the robot, based on the circular arc velocity model."""
 
-    expected_state = getA(dt)@state + getB(dt)@u
+    expected_state = A@state + B@u
 
     return expected_state
 
 # Step 3
-def predictCovariance(state_covariance, dt, process_cov):
+def predictCovariance(state_covariance, process_cov, A, dt):
     """Predicts the new covariance matrix."""
 
-    pred_covariance = getA(dt)@state_covariance@getA(dt).T + process_cov
+    pred_covariance = A@state_covariance@A.T + process_cov
 
     return pred_covariance
 
@@ -44,10 +44,16 @@ def predictCovariance(state_covariance, dt, process_cov):
 def predict(state, state_covariance, u, process_cov, dt):
     """Performs the prediction steps of the EKF SLAM algorithm."""
 
+    # Calculate A - motion matrix
+    A = getA(dt)
+
+    # Calculate B - control matrix
+    B = getB(dt)
+
     # Step 2: Predict state
-    expected_state = predictState(state, u, dt)
+    expected_state = predictState(A, state, B, u, dt)
 
     # Step 3: Expected state covariance
-    expected_state_cov = predictCovariance(state_covariance, dt, process_cov)
+    expected_state_cov = predictCovariance(state_covariance, process_cov, A, dt)
 
     return expected_state, expected_state_cov
