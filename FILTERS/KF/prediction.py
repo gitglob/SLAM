@@ -25,7 +25,7 @@ def getB(dt):
     return B
 
 # Step 2
-def predictState(A, state, B, u, dt):
+def predictState(A, state, B, u):
     """Predicts the new pose μ of the robot, based on the circular arc velocity model."""
 
     expected_state = A@state + B@u
@@ -51,7 +51,7 @@ def predict(state, state_covariance, u, process_cov, dt):
     B = getB(dt)
 
     # Step 2: Predict state
-    expected_state = predictState(A, state, B, u, dt)
+    expected_state = predictState(A, state, B, u)
 
     # Step 3: Expected state covariance
     expected_state_cov = predictCovariance(state_covariance, process_cov, A, dt)

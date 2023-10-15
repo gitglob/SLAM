@@ -23,7 +23,7 @@ def getKalmanGain(expected_state_cov, measurement_cov):
 
 # Step 5
 def updateState(expected_state, K, z):
-    """Updates the state prediction using the previous state prediction, the Kalman Gain and the real and expected observation of a specific landmark."""
+    """Updates the state using the previous state prediction."""
 
     expected_state = expected_state + K @ (z - getC()@expected_state)
 
@@ -31,7 +31,7 @@ def updateState(expected_state, K, z):
 
 # Step 6
 def updateStateCov(K, expected_state_cov):
-    """Updates the state uncertainty using the Kalman Gain and the Jacobian of the function that computes the expected observation."""
+    """Updates the state uncertainty using the Kalman Gain."""
 
     I = np.eye(4,4)
     expected_state_cov = (I - K @ getC()) @ expected_state_cov
@@ -40,7 +40,7 @@ def updateStateCov(K, expected_state_cov):
 
 # Correction step
 def correct(expected_state, expected_state_cov, z, measurement_cov):
-    """Performs the correction steps of the EKF SLAM algorithm."""
+    """Performs the correction steps of the KF."""
 
     # Step 4: Kalman Fain
     K = getKalmanGain(expected_state_cov, measurement_cov)
