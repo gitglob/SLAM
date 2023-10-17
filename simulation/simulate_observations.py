@@ -8,7 +8,8 @@ from . import range_noise_std, yaw_noise_std, range_frequency, yaw_frequency
 from . import timesteps, timestep_duration, initial_radius, growth_factor, num_spirals
 
 
-def simulate_spiral_movement(timesteps, timestep_duration, initial_radius, growth_factor, num_spirals):
+def simulate_spiral_movement(timesteps=timesteps, timestep_duration=timestep_duration, 
+                             initial_radius=initial_radius, growth_factor=growth_factor, num_spirals=num_spirals):
     """
     Simulates a spiral movement for a vehicle.
 
@@ -38,9 +39,11 @@ def simulate_spiral_movement(timesteps, timestep_duration, initial_radius, growt
     x = r * np.cos(theta)
     y = r * np.sin(theta)
 
-    return x, y, t
+    return x, y, theta, t
 
-def simulate_sensors(x, y, t, range_noise_std, yaw_noise_std, range_frequency, yaw_frequency):
+def simulate_sensors(x, y, t, 
+                     range_noise_std=range_noise_std, yaw_noise_std=yaw_noise_std, 
+                     range_frequency=range_frequency, yaw_frequency=yaw_frequency):
     """
     Simulates two sensors: one measuring range and another measuring yaw.
     
@@ -176,10 +179,10 @@ def plot_results(x, y, ranges, range_ts, yaws, yaw_ts):
 
 def main():
     # Simulate spiral movement
-    x, y, t = simulate_spiral_movement(timesteps, timestep_duration, initial_radius, growth_factor, num_spirals)
+    x, y, theta, t = simulate_spiral_movement()
 
     # Simulate sensors
-    (ranges, range_ts), (yaws, yaw_ts) = simulate_sensors(x, y, t, range_noise_std, yaw_noise_std, range_frequency, yaw_frequency)
+    (ranges, range_ts), (yaws, yaw_ts) = simulate_sensors(x, y, t)
 
     # Plotting
     plot_results(x, y, ranges, range_ts, yaws, yaw_ts)

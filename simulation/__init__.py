@@ -11,6 +11,6 @@ timesteps = 1001 # Number of timesteps
 timestep_duration = 0.1 # Duration of each timestep (sec)
 
 # Simulation parameters
-initial_radius = 0
+initial_radius = 1e-6
 growth_factor = 0.1
 num_spirals = 5

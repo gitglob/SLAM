@@ -4,6 +4,7 @@ import numpy as np
 # Local
 from .prediction import predict
 from .correction import correct
+from simulation.simulate_observations import simulate_sensors, simulate_spiral_movement
 
 def get_Q_t(sigma_x=0.1, sigma_phi=0.1):
     """Returns the uncertainty matrix of the sensors."""
@@ -26,7 +27,6 @@ def main():
     ebs = 1e-6
     state_cov = np.eye(3) * ebs
     inf_matrix = np.linalg.inv(state_cov)
-
 
     # Initialize state
     state = np.zeros((3, 1))  + ebs

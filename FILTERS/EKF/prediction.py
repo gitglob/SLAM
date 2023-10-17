@@ -31,7 +31,7 @@ def velocity_model(state, u, dt):
     dx = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
     dy = (v/omega) * np.cos(theta) - (v/omega) * np.cos(theta + omega*dt)
     dtheta = omega*dt
-    displacement = np.array([dx, dy, dz]).reshape((3, 1))
+    displacement = np.array([dx, dy, dtheta]).reshape((3, 1))
 
     return displacement
 
