@@ -16,7 +16,7 @@ def velocity_model(state, u, dt):
     # Displacement from the velocity model - circular arc model
     dx = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
     dy = (v/omega) * np.cos(theta) - (v/omega) * np.cos(theta + omega*dt)
-    dz = omega*dt
+    dtheta = omega*dt
     displacement = np.array([dx, dy, dz]).reshape((3, 1))
 
     return displacement

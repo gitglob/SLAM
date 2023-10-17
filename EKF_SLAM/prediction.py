@@ -29,7 +29,7 @@ def predictState(state, F_x, u, dt):
     # Displacement from the velocity model - circular arc model
     dx = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
     dy = (v/omega) * np.cos(theta) - (v/omega) * np.cos(theta + omega*dt)
-    dz = omega*dt
+    dtheta = omega*dt
     velocity_model = np.array([dx, dy, dz]).reshape((3, 1))
 
     expected_state = state + F_x.T @ velocity_model
@@ -70,9 +70,9 @@ def predictCovariance(G_t, state_covariance, F_x, process_cov):
     # In the new uncertainty, only the parts that contain the robot's pose will change
     updated_covariance = G_t @ state_covariance @ G_t.T
 
-    pred_covariance = updated_covariance + R_t
+    expected_covariance = updated_covariance + R_t
 
-    return pred_covariance
+    return expected_covariance
 
 # Step 1: Prediction
 def predict(state, state_covariance, u, process_cov, dt):

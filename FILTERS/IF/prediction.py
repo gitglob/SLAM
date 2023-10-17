@@ -28,9 +28,9 @@ def getB(dt):
 def predictCovariance(inf_matrix, process_cov, A):
     """Predicts the new covariance matrix."""
 
-    pred_covariance = np.linalg.inv(A @ np.linalg.inv(inf_matrix) @ A.T + process_cov)
+    expected_covariance = np.linalg.inv(A @ np.linalg.inv(inf_matrix) @ A.T + process_cov)
 
-    return pred_covariance
+    return expected_covariance
 
 # Step 3
 def predictState(A, inf_vector, inf_matrix, B, u):

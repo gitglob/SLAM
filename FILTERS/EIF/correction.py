@@ -5,29 +5,30 @@ import numpy as np
 
 
 # Measurement (non-linear) function
-def h(state):
+def h(inf_vector):
     """
-    Nonlinear measurement function mapping state space into measurement space.
+    Nonlinear measurement function mapping inf_vector space into measurement space.
 
     As an example, I assume that I have polar coordinate measurements and I transform them to cartesian.
 
     Parameters
     ----------
-    state : np.ndarray
-        The system state vector.
+    inf_vector : np.ndarray
+        The system inf_vector vector.
     
     Returns
     -------
     measurement : np.ndarray
         The expected measurement vector.
     """
-    x, y, theta = state
+    x, y, theta = inf_vector
     
     range_ = np.sqrt(x**2 + y**2)
     bearing = np.arctan2(y, x)
     
     return [range_, bearing]
 
+# Jacobian of the measurement function
 def getH(state):
     """
     Calculate the Jacobian matrix H of the measurement function h.
@@ -63,46 +64,33 @@ def getH(state):
 
     return np.array(H).reshape(2,3)
 
-# Step 4
-def getKalmanGain(expected_state_cov, measurement_cov, H):
-    """Calculates the Kalman Gain."""
-
-    K = expected_state_cov @ H.T @ np.linalg.inv(H @ expected_state_cov @ H.T + measurement_cov)
-
-    return K
-
 # Step 5
-def updateState(expected_state, K, z, H):
-    """Updates the state prediction."""
+def updateStateCov(expected_inf_matrix, H, measurement_cov):
+    """Updates the inf_vector uncertainty."""
+    inf_matrix = expected_inf_matrix + H.T @ measurement_cov @ H
 
-    expected_state = expected_state + K @ (z - h(expected_state))
-
-    return expected_state
+    return inf_matrix
 
 # Step 6
-def updateStateCov(K, H, expected_state_cov):
-    """Updates the state uncertainty."""
+def updateState(expected_inf_vector, H, measurement_cov, z, expected_state):
+    """Updates the inf_vector prediction."""
 
-    I = np.eye(3,3)
-    expected_state_cov = (I - K @ H) @ expected_state_cov
+    expected_inf_vector = expected_inf_vector + H.T @ np.linalg.inv(measurement_cov) @ (z - h(expected_state) + H @ expected_state)
 
-    return expected_state_cov
+    return expected_inf_vector
 
 # Correction step
-def correct(expected_state, expected_state_cov, z, measurement_cov):
+def correct(expected_inf_matrix, expected_inf_vector, expected_state, z, measurement_cov):
     """Performs the correction steps of the EKF SLAM algorithm."""
 
     # Calculate the Jacobian of the measurement model
     H = getH(expected_state)
 
-    # Step 4: Kalman Fain
-    K = getKalmanGain(expected_state_cov, measurement_cov, H)
+    # Step 5: Uncertainty Update
+    inf_matrix = updateStateCov(expected_inf_matrix, H, measurement_cov)
 
-    # Step 5: State update
-    state = updateState(expected_state, K, z, H)
-
-    # Step 6: Uncertainty Update
-    state_cov = updateStateCov(K, H, expected_state_cov)
+    # Step 6: State update
+    inf_vector = updateState(expected_inf_vector, H, measurement_cov, z, expected_state)
 
     # Step 7: return
-    return state, state_cov
+    return inf_matrix, inf_vector

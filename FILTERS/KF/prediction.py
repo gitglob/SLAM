@@ -36,9 +36,9 @@ def predictState(A, state, B, u):
 def predictCovariance(state_covariance, process_cov, A, dt):
     """Predicts the new covariance matrix."""
 
-    pred_covariance = A@state_covariance@A.T + process_cov
+    expected_covariance = A@state_covariance@A.T + process_cov
 
-    return pred_covariance
+    return expected_covariance
 
 # Prediction step
 def predict(state, state_covariance, u, process_cov, dt):

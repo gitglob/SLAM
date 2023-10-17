@@ -30,7 +30,7 @@ def velocity_model(state, u, dt):
     # Displacement from the velocity model - circular arc model
     dx = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
     dy = (v/omega) * np.cos(theta) - (v/omega) * np.cos(theta + omega*dt)
-    dz = omega*dt
+    dtheta = omega*dt
     displacement = np.array([dx, dy, dz]).reshape((3, 1))
 
     return displacement
@@ -49,9 +49,9 @@ def predictState(state, u, dt):
 def predictCovariance(state_covariance, process_cov, G):
     """Predicts the new covariance matrix."""
 
-    pred_covariance = G@state_covariance@G.T + process_cov
+    expected_covariance = G@state_covariance@G.T + process_cov
 
-    return pred_covariance
+    return expected_covariance
 
 # Prediction step
 def predict(state, state_covariance, u, process_cov, dt):
