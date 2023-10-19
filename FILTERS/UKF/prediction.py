@@ -5,7 +5,7 @@ import numpy as np
 from .utils import getSigmaPoints, getWeight
 
 
-def velocity_model(state, u, dt):
+def velocityModel(state, u, dt):
     """Calculates the movement of the robot (displacement) based on the circular arc velocity model."""
     # Extract linear velocity and yaw rate
     v, omega = u
@@ -25,7 +25,7 @@ def velocity_model(state, u, dt):
 def predictState(state, u, dt):
     """Predicts the new pose μ of the robot, using a velocity model."""
 
-    displacement = velocity_model(state, u, dt)
+    displacement = velocityModel(state, u, dt)
 
     expected_state = state + displacement
 
@@ -36,7 +36,7 @@ def propagateSigmaPoints(sigma_points, u, dt):
     """Passes the sigma points of the current iteration through the non-linear process function."""
     propagated_sigma_points = []
     for sigma_point in sigma_points:
-        propagated_sigma_points.append(velocity_model(sigma_point, u, dt).tolist())
+        propagated_sigma_points.append(velocityModel(sigma_point, u, dt).tolist())
 
     return np.array(propagated_sigma_points).reshape((len(sigma_points), 3, 1))
 

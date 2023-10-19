@@ -23,10 +23,10 @@ def h(inf_vector):
     """
     x, y, theta = inf_vector
     
-    range_ = np.sqrt(x**2 + y**2)
+    range = np.sqrt(x**2 + y**2)
     bearing = np.arctan2(y, x)
     
-    return [range_, bearing]
+    return [range, bearing]
 
 # Jacobian of the measurement function
 def getH(state):

@@ -30,9 +30,9 @@ def predictState(state, F_x, u, dt):
     dx = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
     dy = (v/omega) * np.cos(theta) - (v/omega) * np.cos(theta + omega*dt)
     dtheta = omega*dt
-    velocity_model = np.array([dx, dy, dz]).reshape((3, 1))
+    velocityModel = np.array([dx, dy, dz]).reshape((3, 1))
 
-    expected_state = state + F_x.T @ velocity_model
+    expected_state = state + F_x.T @ velocityModel
 
     return expected_state
 

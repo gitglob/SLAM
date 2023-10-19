@@ -19,7 +19,7 @@ def getG(state, u, dt):
 
     return G
 
-def velocity_model(inf_vector, u, dt):
+def velocityModel(inf_vector, u, dt):
     """Calculates the movement of the robot (displacement) based on the circular arc velocity model."""
     # Extract linear velocity and yaw rate
     v, omega = u
@@ -54,7 +54,7 @@ def predictCovariance(inf_matrix, process_cov, G):
 def predictState(state, u, dt):
     """Predicts the new pose μ of the robot, using a velocity model."""
 
-    displacement = velocity_model(state, u, dt)
+    displacement = velocityModel(state, u, dt)
 
     expected_inf_vector = state + displacement
 
