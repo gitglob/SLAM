@@ -4,46 +4,74 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 # Local
-from . import range_noise_std, yaw_noise_std, range_frequency, yaw_frequency
-from . import timesteps, timestep_duration, initial_radius, growth_factor, num_spirals
+from utils import polar2xy, velocityModel
+from . import range_noise_std, yaw_noise_std, sensor_frequency
+from . import timesteps, timestep_duration, initial_radius, growth_factor
 
 
 def simulate_spiral_movement(timesteps=timesteps, timestep_duration=timestep_duration, 
-                             initial_radius=initial_radius, growth_factor=growth_factor, num_spirals=num_spirals):
+                             initial_radius=initial_radius, growth_factor=growth_factor):
     """
-    Simulates a spiral movement for a vehicle.
-
-    Parameters
-    ----------
-    timesteps : int
-        Number of timesteps to simulate.
-    timestep_duration : int
-        Duration of each timestep.
-    initial_radius : float
-        Initial radius of the spiral.
-    growth_factor : float
-        Factor determining the growth of the spiral.
+    Simulates a spiral movement for a vehicle based on the circular arc velocity model.
+    
+    The idea behind the simulation is to use the vehicle's velocity and yaw rate
+    to generate a spiral motion. At each timestep, the desired radius of the spiral
+    is calculated. The vehicle's velocity and yaw rate are then adjusted to achieve
+    this radius, and the vehicle's position is updated based on the velocity model.
 
     Returns
     -------
-    x, y, t : np.ndarray, np.ndarray, np.ndarray
+    x, y, theta, t, v, omega : np.ndarray, ...
         - X and Y coordinates of the vehicle over time (m).
         - Time corresponding to the coordinates (sec).
+        - Heading (radians) over time.
+        - Velocity (m/s) over time.
+        - Yaw rate (rad/s) over time.
     """
-    # Create time array
+
+    # Initialize lists to store trajectory data
+    x = [0]
+    y = [0]
+    theta = [np.pi/2]  # Start pointing upwards, which is pi/2 radians from the x-axis
+    
+    # Generate a linear time array based on the specified timesteps and duration
     t = np.linspace(0, timesteps*timestep_duration, timesteps)
 
-    # Simulate spiral
-    theta = np.linspace(0, num_spirals * 2 * np.pi, timesteps)
-    r = initial_radius + growth_factor * t
-    x = r * np.cos(theta)
-    y = r * np.sin(theta)
+    # Define a constant linear velocity for the vehicle
+    v = 10.0
 
-    return x, y, theta, t
+    # Keep vehicle rotational velocity
+    omegas = [0]
+    
+    for i in range(1, timesteps):
+        # Calculate the desired spiral radius based on the elapsed time and growth factor.
+        # This is a simple linear model where the radius grows over time.
+        current_radius = initial_radius + growth_factor * t[i]
+        
+        # Calculate the vehicle's velocity and yaw rate to achieve the desired spiral.
+        # The idea is to adjust the speed and turning rate to maintain the growth 
+        # of the spiral as determined by the current_radius.
+        omega = v / current_radius
+        omegas.append(omega)
 
-def simulate_sensors(x, y, t, 
+        # Fetch the previous state of the robot (position and heading).
+        state = [x[-1], y[-1], theta[-1]]
+        
+        # Use the velocity model to calculate how much the robot moves during the current timestep.
+        velocity_profile = ([v, omega])
+        displacement = velocityModel(state, velocity_profile, timestep_duration)
+
+        # Update the robot's position and heading based on the calculated displacement.
+        x.append(x[-1] + displacement[0])
+        y.append(y[-1] + displacement[1])
+        theta.append(theta[-1] + displacement[2])
+
+    # Convert lists to numpy arrays for consistency and easier processing
+    return np.array(x), np.array(y), np.array(theta), t, np.full_like(t, v), np.array(omegas)
+
+def simulate_sensors(x, y, t, add_noise=False,
                      range_noise_std=range_noise_std, yaw_noise_std=yaw_noise_std, 
-                     range_frequency=range_frequency, yaw_frequency=yaw_frequency):
+                     sensor_frequency=sensor_frequency):
     """
     Simulates two sensors: one measuring range and another measuring yaw.
     
@@ -71,60 +99,22 @@ def simulate_sensors(x, y, t,
     """
     
     # Determine timesteps for measurements based on frequency
-    range_t = np.arange(t[0], t[-1], 1/range_frequency)
-    range_indices = [np.argmin(np.abs(t - time)) for time in range_t]
-    yaw_t = np.arange(t[0], t[-1], 1/yaw_frequency)
-    yaw_indices = [np.argmin(np.abs(t - time)) for time in yaw_t]
+    sensor_t = np.arange(t[0], t[-1], 1/sensor_frequency)
+    sensor_indices = [np.argmin(np.abs(t - time)) for time in sensor_t]
     
     # Extract range and yaw values at the specified timesteps and add measurement noise
-    range_measurements = np.sqrt(x[range_indices]**2 + y[range_indices]**2) 
-    range_measurements += np.random.normal(0, range_noise_std, len(range_indices))
+    range_measurements = np.sqrt(x[sensor_indices]**2 + y[sensor_indices]**2) 
+    yaw_measurements = np.arctan2(y[sensor_indices], x[sensor_indices])
+
+    if add_noise:
+        range_measurements += np.random.normal(0, range_noise_std, len(sensor_indices))
+        yaw_measurements += np.random.normal(0, yaw_noise_std, len(sensor_indices))
+
+    sensor_measurements = np.vstack((range_measurements, yaw_measurements)).T
     
-    yaw_measurements = np.arctan2(y[yaw_indices], x[yaw_indices])
-    yaw_measurements += np.random.normal(0, yaw_noise_std, len(yaw_indices))
-    
-    return (range_measurements, range_t), (yaw_measurements, yaw_t)
+    return (sensor_measurements, sensor_t)
 
-def polar2xy(ranges, range_ts, yaws, yaw_ts):
-    """
-    Convert range and yaw data to x, y coordinates using the provided timestamps.
-    If no yaw measurement is available for a range timestamp, the last available yaw measurement is used.
-    Also, returns a boolean mask indicating if the corresponding x, y point used the last available yaw measurement.
-
-    Parameters
-    ----------
-    ranges, range_ts, yaws, yaw_ts : np.ndarray, np.ndarray
-        Range and yaw measurements with their respective timestamps.
-
-    Returns
-    -------
-    x, y, mask : np.ndarray, np.ndarray, np.ndarray
-        Converted X and Y coordinates and a mask indicating which points used the last yaw measurement.
-    """
-    # Lists to store converted coordinates and mask
-    x_coords = []
-    y_coords = []
-    mask = []
-
-    # Initialize last available yaw value
-    last_yaw = yaws[0]
-
-    for rt in range_ts:
-        # Find closest yaw timestamp
-        idx = np.searchsorted(yaw_ts, rt, side='right') - 1
-        if idx >= 0:
-            last_yaw = yaws[idx]
-            mask.append(True if yaw_ts[idx] == rt else False)
-        else:
-            mask.append(False)
-        # Convert range and yaw to x, y
-        r = ranges[np.where(range_ts == rt)]
-        x_coords.append(r * np.cos(last_yaw))
-        y_coords.append(r * np.sin(last_yaw))
-
-    return np.array(x_coords), np.array(y_coords), np.array(mask)
-
-def plot_results(x, y, ranges, range_ts, yaws, yaw_ts):
+def plot_results(x, y, sensor_measurements, sensor_ts):
     """
     Plots the spiral movement of the robot and its sensor readings.
 
@@ -132,22 +122,21 @@ def plot_results(x, y, ranges, range_ts, yaws, yaw_ts):
     ----------
     x, y : np.ndarray, np.ndarray
         X and Y coordinates of the vehicle.
-    ranges, range_ts, yaws, yaw_ts : np.ndarray, np.ndarray
-        Range and yaw measurements with their respective timestamps.
+    sensor_measurements, sensor_ts : np.ndarray, np.ndarray
+        Range and yaw measurements with their respective timestamp.
 
     Returns
     -------
     None
     """
     # Convert range and yaw data back to x and y
-    sensor_x, sensor_y, mask = polar2xy(ranges, range_ts, yaws, yaw_ts)
+    sensor_xy = polar2xy(sensor_measurements)
 
     fig, ax = plt.subplots(3, 1, figsize=(8, 15))
     
     # Spiral movement plot
-    ax[0].plot(x, y, label='Ground Truth Path', color='blue')
-    ax[0].scatter(sensor_x[mask], sensor_y[mask], c='red', s=15, label='Sensor Readings (New Yaw)', marker='x')
-    ax[0].scatter(sensor_x[~mask], sensor_y[~mask], c='purple', s=5, label='Sensor Readings (Last Yaw)', marker='o')
+    ax[0].plot(x, y,linewidth=.5, label='Ground Truth Path', color='blue')
+    ax[0].scatter(sensor_xy[:,0], sensor_xy[:,1], c='red', s=5, label='Sensor Readings', marker='x')
     ax[0].set_title('Spiral Movement of the Robot')
     ax[0].set_xlabel('X')
     ax[0].set_ylabel('Y')
@@ -156,7 +145,7 @@ def plot_results(x, y, ranges, range_ts, yaws, yaw_ts):
     ax[0].legend()
 
     # Range sensor readings plot
-    ax[1].plot(range_ts, ranges, label='Range Readings', color='green')
+    ax[1].plot(sensor_ts, sensor_measurements[:,0], label='Range Readings', color='green')
     ax[1].set_title('Range Readings over Time')
     ax[1].set_xlabel('Time')
     ax[1].set_ylabel('Range (m)')
@@ -164,7 +153,7 @@ def plot_results(x, y, ranges, range_ts, yaws, yaw_ts):
     ax[1].legend()
 
     # Yaw sensor readings plot
-    ax[2].plot(yaw_ts, yaws, label='Yaw Readings', color='orange')
+    ax[2].plot(sensor_ts, sensor_measurements[:,1], label='Yaw Readings', color='orange')
     ax[2].set_title('Yaw Readings over Time')
     ax[2].set_xlabel('Time')
     ax[2].set_ylabel('Yaw (rad)')
@@ -174,18 +163,18 @@ def plot_results(x, y, ranges, range_ts, yaws, yaw_ts):
     plt.tight_layout()
     if not os.path.exists("results"):
         os.makedirs("results")
-    plt.savefig('results/simulated_trajectory.png')
+    plt.savefig('results/simulated_trajectory.png', dpi=300)
 
 
 def main():
     # Simulate spiral movement
-    x, y, theta, t = simulate_spiral_movement()
+    x, y, theta, t, v, omega = simulate_spiral_movement()
 
-    # Simulate sensors
-    (ranges, range_ts), (yaws, yaw_ts) = simulate_sensors(x, y, t)
+    # Simulate sensor readings
+    (sensor_measurements, sensor_ts) = simulate_sensors(x, y, t, add_noise=True)
 
     # Plotting
-    plot_results(x, y, ranges, range_ts, yaws, yaw_ts)
+    plot_results(x, y, sensor_measurements, sensor_ts)
 
 if __name__ == "__main__":
     main()
