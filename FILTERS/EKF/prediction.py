@@ -2,6 +2,7 @@
 # External
 import numpy as np
 # Local
+from utils import velocityModel
 
 def getG(state, u, dt):
     """Calculates the Jacobian of the motion model at the given state under the current control input."""
@@ -12,36 +13,30 @@ def getG(state, u, dt):
     # Extract heading
     theta = state[2]
 
+    # Check for division by zero
+    epsilon = 1e-6
+    if omega < epsilon:
+        raise ValueError("Division by zero in prediction Jacobian calculation.")
+
     # Jacobian of the motion model
     G = np.eye(3,3)
     G[0,2] = (-v/omega) * np.cos(theta) + (v/omega) * np.cos(theta + omega*dt)
-    G[1,2] = (-v/omega) * np.sin(theta) - (v/omega) * np.sin(theta + omega*dt)
+    G[1,2] = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
 
     return G
-
-def velocity_model(state, u, dt):
-    """Calculates the movement of the robot (displacement) based on the circular arc velocity model."""
-    # Extract linear velocity and yaw rate
-    v, omega = u
-
-    # Extract heading
-    theta = state[2]
-
-    # Displacement from the velocity model - circular arc model
-    dx = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
-    dy = (v/omega) * np.cos(theta) - (v/omega) * np.cos(theta + omega*dt)
-    dtheta = omega*dt
-    displacement = np.array([dx, dy, dtheta]).reshape((3, 1))
-
-    return displacement
 
 # Step 2
 def predictState(state, u, dt):
     """Predicts the new pose μ of the robot, using a velocity model."""
 
-    displacement = velocity_model(state, u, dt)
+    # Displacement based on the velocity model
+    displacement = np.array(velocityModel(state, u, dt)).reshape((3,1))
 
-    expected_state = state + displacement
+    # Artificial displacement, so that the prediction is not perfect
+    artificial_displacement = np.random.randn(3, 1)*displacement
+
+    # New, predicted state
+    expected_state = state + displacement + artificial_displacement
 
     return expected_state
 

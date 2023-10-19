@@ -2,7 +2,10 @@
 # External
 import numpy as np
 # Local
+from simulation import random_seed
+from utils import normalize_angle
 
+np.random.seed(random_seed)
 
 # Measurement (non-linear) function
 def h(state):
@@ -23,10 +26,11 @@ def h(state):
     """
     x, y, theta = state
     
-    range_ = np.sqrt(x**2 + y**2)
+    range = np.sqrt(x**2 + y**2)
     bearing = np.arctan2(y, x)
-    
-    return [range_, bearing]
+    bearing = normalize_angle(bearing)
+        
+    return np.array([range, bearing]).reshape((2,1))
 
 def getH(state):
     """
@@ -49,8 +53,9 @@ def getH(state):
     denom2 = x**2 + y**2
     
     # Check for division by zero
-    if denom1 == 0 or denom2 == 0:
-        raise ValueError("Division by zero in Jacobian calculation.")
+    epsilon = 1e-10
+    if denom1 < epsilon or denom2 < epsilon:
+        raise ValueError("Division by zero in correction Jacobian calculation.")
     
     # Compute the partial derivatives
     h11 = x / denom1
@@ -58,8 +63,8 @@ def getH(state):
     h21 = -y / denom2
     h22 = x / denom2
     
-    H =[[h11.item(), h12.item(), 0],
-        [h21.item(), h22.item(), 0]]
+    H = [[h11.item(), h12.item(),  0],
+         [h21.item(), h22.item(),  0]]
 
     return np.array(H).reshape(2,3)
 
@@ -72,10 +77,12 @@ def getKalmanGain(expected_state_cov, measurement_cov, H):
     return K
 
 # Step 5
-def updateState(expected_state, K, z, H):
+def updateState(expected_state, K, z):
     """Updates the state prediction."""
 
-    expected_state = expected_state + K @ (z - h(expected_state))
+    z_diff = z - h(expected_state)
+    z_diff[1] = normalize_angle(z_diff[1])
+    expected_state = expected_state + K @ z_diff
 
     return expected_state
 
@@ -95,11 +102,11 @@ def correct(expected_state, expected_state_cov, z, measurement_cov):
     # Calculate the Jacobian of the measurement model
     H = getH(expected_state)
 
-    # Step 4: Kalman Fain
+    # Step 4: Kalman Gain
     K = getKalmanGain(expected_state_cov, measurement_cov, H)
 
     # Step 5: State update
-    state = updateState(expected_state, K, z, H)
+    state = updateState(expected_state, K, z)
 
     # Step 6: Uncertainty Update
     state_cov = updateStateCov(K, H, expected_state_cov)
