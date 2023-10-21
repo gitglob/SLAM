@@ -5,7 +5,6 @@ import numpy as np
 from utils import velocityModel
 from .utils import getSigmaPoints, getWeight
 from simulation import random_seed
-from utils import normalize_angle
 
 
 np.random.seed(random_seed)
@@ -29,13 +28,14 @@ def propagateSigmaPoints(sigma_points, u, dt):
     np.ndarray
         Propagated sigma points with the given motion model and control input.
     """
-    propagated_sigma_points = []
+    propagated_sigma_points = np.zeros((len(sigma_points), 3, 1))
 
-    for sigma_point in sigma_points:
-        dx, dy, dtheta = velocityModel(sigma_point, u, dt)
-        [x, y, theta] = [sigma_point[0] + dx, sigma_point[1] + dy, sigma_point[2] + dtheta]
-        # theta = normalize_angle(theta)
-        propagated_sigma_points.append([x, y, theta])
+    for i, sigma_point in enumerate(sigma_points):
+        # Displacement based on the velocity model
+        displacement = np.vstack(velocityModel(sigma_point, u, dt))
+
+        # New, predicted sigma point
+        propagated_sigma_points[i] = sigma_point + displacement
 
     return np.array(propagated_sigma_points).reshape((len(sigma_points), 3, 1))
 

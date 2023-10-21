@@ -5,9 +5,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 # Local
 from utils import polar2xy, velocityModel
+from simulation import random_seed
 from . import range_noise_std, yaw_noise_std, sensor_frequency
 from . import timesteps, timestep_duration, initial_radius, growth_factor
 
+
+np.random.seed(random_seed)
 
 def simulate_spiral_movement(timesteps=timesteps, timestep_duration=timestep_duration, 
                              initial_radius=initial_radius, growth_factor=growth_factor):
@@ -61,10 +64,14 @@ def simulate_spiral_movement(timesteps=timesteps, timestep_duration=timestep_dur
         velocity_profile = ([v, omega])
         displacement = velocityModel(state, velocity_profile, timestep_duration)
 
+        # Artificial displacement, because real movement is never perfect
+        noise = np.random.randn(3).tolist()
+        artificial_displacement = [a*b for (a,b) in zip(displacement, noise)]
+
         # Update the robot's position and heading based on the calculated displacement.
-        x.append(x[-1] + displacement[0])
-        y.append(y[-1] + displacement[1])
-        theta.append(theta[-1] + displacement[2])
+        x.append(x[-1] + displacement[0] + artificial_displacement[0])
+        y.append(y[-1] + displacement[1] + artificial_displacement[1])
+        theta.append(theta[-1] + displacement[2] + artificial_displacement[2])
 
     # Convert lists to numpy arrays for consistency and easier processing
     return np.array(x), np.array(y), np.array(theta), t, np.full_like(t, v), np.array(omegas)

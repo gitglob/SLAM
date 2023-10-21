@@ -34,13 +34,10 @@ def predictState(state, u, dt):
     """Predicts the new pose μ of the robot, using a velocity model."""
 
     # Displacement based on the velocity model
-    displacement = np.array(velocityModel(state, u, dt)).reshape((3,1))
-
-    # Artificial displacement, so that the prediction is not perfect
-    artificial_displacement = np.random.randn(3, 1)*displacement
+    displacement = np.vstack(velocityModel(state, u, dt))
 
     # New, predicted state
-    expected_state = state + displacement + artificial_displacement
+    expected_state = state + displacement
 
     return expected_state
 

@@ -67,7 +67,7 @@ def getH(state):
 # Step 5
 def updateStateCov(expected_inf_matrix, H, measurement_cov):
     """Updates the inf_vector uncertainty."""
-    inf_matrix = expected_inf_matrix + H.T @ measurement_cov @ H
+    inf_matrix = expected_inf_matrix + H.T @ np.linalg.inv(measurement_cov) @ H
 
     return inf_matrix
 

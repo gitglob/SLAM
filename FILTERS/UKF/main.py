@@ -13,7 +13,7 @@ from . import alpha, kappa
 
 np.random.seed(random_seed)
 
-def get_Q_t(sigma_r=range_noise_std, sigma_phi=yaw_noise_std):
+def getQ(sigma_r=range_noise_std, sigma_phi=yaw_noise_std):
     """Returns the uncertainty matrix of the sensors."""
     Q_t = [[sigma_r**2,              0], 
            [0,            sigma_phi**2]]
@@ -40,10 +40,10 @@ def main():
     state_cov = np.eye(3) * 1e-12
     
     # Initialize process noise
-    process_cov = np.eye(3)*0.1
+    process_cov = np.eye(3)*0.0001
 
     # Initialize measurement noise
-    measurement_cov = get_Q_t()
+    measurement_cov = getQ()*1e-4
 
     # Keep track of all the states
     all_states = np.zeros((len(time),3,1))

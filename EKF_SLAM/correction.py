@@ -4,7 +4,7 @@ import numpy as np
 from . import NUM_LANDMARKS
 
 
-def get_Q_t(sigma_r=100, sigma_phi=100):
+def getQ(sigma_r=100, sigma_phi=100):
     """Returns the uncertainty matrix of the sensors"""
     Q_t = [[sigma_r**2, 0], 
            [0,          sigma_phi**2]]
@@ -87,7 +87,7 @@ def updateExpectedPred(expected_state, K, z, z_pred):
 def correct(expected_state, expected_state_cov):
     """Performs the correction steps of the EKF SLAM algorithm."""
     # Step 6
-    Q = get_Q_t()
+    Q = getQ()
 
     # List of observed landmarks
     j_seen = []

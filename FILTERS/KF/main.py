@@ -5,7 +5,7 @@ import numpy as np
 from .prediction import predict
 from .correction import correct
 
-def get_Q_t(sigma_r=100, sigma_phi=100):
+def getQ(sigma_r=100, sigma_phi=100):
     """Returns the uncertainty matrix of the sensors"""
     Q_t = [[sigma_r**2, 0], 
            [0,          sigma_phi**2]]
@@ -31,7 +31,7 @@ def main():
     process_cov = np.zeros((4, 4))
 
     # Measurement noise initialization
-    measurement_cov = get_Q_t()
+    measurement_cov = getQ()
 
     # Iterate over time
     for i, t in enumerate(time):

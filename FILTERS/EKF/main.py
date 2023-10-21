@@ -11,7 +11,7 @@ from .correction import correct
 
 np.random.seed(random_seed)
 
-def get_Q_t(sigma_r=range_noise_std, sigma_phi=yaw_noise_std):
+def getQ(sigma_r=range_noise_std, sigma_phi=yaw_noise_std):
     """Returns the uncertainty matrix of the sensors."""
     Q_t = [[sigma_r**2,              0], 
            [0,            sigma_phi**2]]
@@ -41,7 +41,7 @@ def main():
     process_cov = np.eye(3)*0.1
 
     # Initialize measurement noise
-    measurement_cov = get_Q_t()
+    measurement_cov = getQ()
 
     # Keep track of all the states
     all_states = np.zeros((len(time),3,1))
@@ -82,7 +82,7 @@ def main():
             correction_counter += 1
 
             # Steps 4-7: Correction
-            state, state_cov = correct(state, state_cov, z, measurement_cov)
+            state, state_cov = correct(expected_state, expected_state_cov, z, measurement_cov)
             correction_states[correction_counter-1] = state
 
         # Keep track of the all_states

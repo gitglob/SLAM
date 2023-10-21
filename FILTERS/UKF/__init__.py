@@ -1,4 +1,4 @@
 # Sigma points parameters
-alpha = .5
-kappa = 6
+alpha = .01
+kappa = 0 # 3 - n
 beta = 2

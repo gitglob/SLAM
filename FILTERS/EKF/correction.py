@@ -80,9 +80,9 @@ def getKalmanGain(expected_state_cov, measurement_cov, H):
 def updateState(expected_state, K, z):
     """Updates the state prediction."""
 
-    z_diff = z - h(expected_state)
-    z_diff[1] = normalize_angle(z_diff[1])
-    expected_state = expected_state + K @ z_diff
+    innovation = z - h(expected_state)
+    innovation[1] = normalize_angle(innovation[1])
+    expected_state = expected_state + K @ innovation
 
     return expected_state
 

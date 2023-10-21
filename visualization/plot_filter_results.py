@@ -30,7 +30,7 @@ def plot_filter_trajectories(robot_states, prediction_states, correction_states,
     fig, ax = plt.subplots(figsize=(10, 8))
     
     # Plot robot trajectory
-    ax.plot(robot_states[:, 0], robot_states[:, 1], 'b-', label='Robot Trajectory', alpha=0.7)
+    ax.plot(robot_states[:, 0], robot_states[:, 1], 'b-', label='Estimated Trajectory', alpha=0.7)
     
     # Plot ground truth trajectory
     ax.plot(ground_truth_states[:, 0], ground_truth_states[:, 1], 'r--', label='Ground Truth', alpha=0.7)

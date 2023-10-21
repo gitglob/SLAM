@@ -29,7 +29,6 @@ def h(state):
     
     range = np.sqrt(x**2 + y**2).item()
     bearing = np.arctan2(y, x).item()
-    # bearing = normalize_angle(bearing)
     
     return np.array([range, bearing]).reshape((2,1))
 
@@ -49,7 +48,6 @@ def propagateSigmaPoints(sigma_points):
     """
     expected_sigma_points = np.zeros((len(sigma_points), 2, 1))
     for i, sigma_point in enumerate(sigma_points):
-        propagated_sigma_point = np.array(xy2polar(sigma_point)).reshape((2,1))
         expected_sigma_points[i] = h(sigma_point)
 
     return expected_sigma_points

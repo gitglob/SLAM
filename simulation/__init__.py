@@ -1,6 +1,6 @@
 # Sensors noise
-range_noise_std = 0.001 # meters
-yaw_noise_std = 0.001 # rads
+range_noise_std = 0.01 # meters (1 cm)
+yaw_noise_std = 0.05 # rads (~2.86 degrees)
 
 # Sensor frequency
 sensor_frequency = .5 # 0.5/sec
