@@ -3,6 +3,10 @@
 import numpy as np
 # Local
 from utils import velocityModel
+from simulation import random_seed
+
+
+np.random.seed(random_seed)
 
 def getG(state, u, dt):
     """Calculates the Jacobian of the motion model at the given state under the current control input."""

@@ -4,6 +4,7 @@ import numpy as np
 # Local
 from .prediction import predict
 from .correction import correct
+from visualization.plot_filter_results import plot_filter_trajectories
 from simulation.simulate_observations import simulate_sensors, simulate_spiral_movement
 
 def get_Q_t(sigma_x=0.1, sigma_phi=0.1):
@@ -40,10 +41,12 @@ def main():
 
     # Iterate over time
     for i, t in enumerate(time):
-        print(f"Iteration: {i}")
+        if i%100 == 0:
+            print(f"Iteration: {i}, time: {t}")
+
         # Calculate dt
         if i == 0:
-            dt = 0
+            continue
         else:
             dt = t - time[i-1]
 
@@ -61,6 +64,14 @@ def main():
         # Steps 6-8: Correction
         inf_matrix, inf_vector = correct(expected_inf_matrix, expected_inf_vector, expected_state, z, measurement_cov)
 
+    # Plot the results
+    breakpoint()
+    plot_filter_trajectories(all_states, 
+                             prediction_states, correction_states, 
+                             gt_states, "UKF")
+    
+    print(f"# of iterations: {i}")
+    print(f"# of corrections: {correction_counter}")
     print("EIF finished!")
 
 if __name__ == "__main__":

@@ -2,7 +2,11 @@
 # External
 import numpy as np
 # Local
+from utils import normalize_angle, xy2polar
+from simulation import random_seed
 from .utils import getSigmaPoints, getWeight
+
+np.random.seed(random_seed)
 
 # Measurement (non-linear) function
 def h(state):
@@ -25,15 +29,28 @@ def h(state):
     
     range = np.sqrt(x**2 + y**2).item()
     bearing = np.arctan2(y, x).item()
+    # bearing = normalize_angle(bearing)
     
     return np.array([range, bearing]).reshape((2,1))
 
 # Step 7
 def propagateSigmaPoints(sigma_points):
-    """Passes the sigma points of the current iteration through the non-linear measurement function."""
-    expected_sigma_points = []
-    for sigma_point in sigma_points:
-        expected_sigma_points.append(h(sigma_point))
+    """
+    Passes the sigma points through the non-linear measurement function.
+    
+    Parameters
+    ----------
+    sigma_points : np.ndarray
+
+    Returns
+    -------
+    np.ndarray
+        The sigma points passed through the non-linear measurement function.
+    """
+    expected_sigma_points = np.zeros((len(sigma_points), 2, 1))
+    for i, sigma_point in enumerate(sigma_points):
+        propagated_sigma_point = np.array(xy2polar(sigma_point)).reshape((2,1))
+        expected_sigma_points[i] = h(sigma_point)
 
     return expected_sigma_points
 
@@ -41,8 +58,8 @@ def propagateSigmaPoints(sigma_points):
 def predictObservation(propagated_sigma_points, lamda, num_dim):
     """Calculates the weighted mean of the propagated sigma points."""
 
-    expected_observation = 0
-    for i in range(0, 2*num_dim):
+    expected_observation = np.zeros((2,1))
+    for i in range(2*num_dim+1):
         expected_observation += getWeight(lamda, num_dim, i)[0] * propagated_sigma_points[i]
 
     return expected_observation
@@ -50,8 +67,8 @@ def predictObservation(propagated_sigma_points, lamda, num_dim):
 # Step 9
 def updateUncertainty(propagated_sigma_points, expected_observation, measurement_cov, lamda, num_dim):
     """Calculates S."""
-    S = 0
-    for i in range(0, 2*num_dim):
+    S = np.zeros(measurement_cov.shape)
+    for i in range(2*num_dim+1):
         S += getWeight(lamda, num_dim, i)[1] * (propagated_sigma_points[i] - expected_observation) @ (propagated_sigma_points[i] - expected_observation).T + measurement_cov
 
     return S
@@ -59,8 +76,8 @@ def updateUncertainty(propagated_sigma_points, expected_observation, measurement
 # Step 10
 def predictStateCov(sigma_points, expected_state, propagated_sigma_points, expected_observation, lamda, num_dim):
     """Calculates the expected state uncertainty."""
-    expected_state_cov = 0
-    for i in range(0, 2*num_dim):
+    expected_state_cov = np.zeros((num_dim, 2))
+    for i in range(2*num_dim+1):
         expected_state_cov += getWeight(lamda, num_dim, i)[1] * (sigma_points[i] - expected_state) @ (propagated_sigma_points[i] - expected_observation).T
 
     return expected_state_cov
@@ -90,8 +107,8 @@ def updateStateCov(expected_state_cov, K, S):
 def correct(expected_state, expected_state_cov, observation, measurement_cov, num_dim, lamda):
     """Performs the correction steps of the EKF SLAM algorithm."""
 
-    # Step 6: Kalman Fain
-    sigma_points = getSigmaPoints(expected_state, num_dim, lamda, expected_state_cov)
+    # Step 6: Get sigma points
+    sigma_points = getSigmaPoints(expected_state, lamda, expected_state_cov)
 
     # Step 7: State update
     propagated_sigma_points = propagateSigmaPoints(sigma_points)

@@ -52,5 +52,5 @@ def plot_filter_trajectories(robot_states, prediction_states, correction_states,
     save_path = os.path.join("results")
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-    plt.savefig(os.path.join(save_path, f"{filter_name}-trajectory_comparison.png"), dpi=600)
+    plt.savefig(os.path.join(save_path, f"{filter_name}-trajectory.png"), dpi=600)
     plt.close()

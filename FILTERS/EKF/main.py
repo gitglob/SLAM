@@ -7,7 +7,7 @@ from simulation import range_noise_std, yaw_noise_std, random_seed
 from visualization.plot_filter_results import plot_filter_trajectories
 from .prediction import predict
 from .correction import correct
-from utils import polar2xy
+
 
 np.random.seed(random_seed)
 
@@ -26,13 +26,13 @@ def main():
 
     # Simulation - Spiral Trajectory ground truth
     x, y, theta, time, v, omega = simulate_spiral_movement()
-    gt_states = np.vstack((x, y, theta)).T
+    gt_states = np.column_stack((x, y, theta))
 
     # Simulation - Spiral Trajectory sensor readings
     (sensor_measurements, sensor_ts) = simulate_sensors(x, y, time)
 
     # Initialize state
-    state = np.array([x[0], y[0], theta[0]]).reshape((3,1)) # x, y, θ
+    state = np.vstack((x[0], y[0], theta[0])) # x, y, θ
 
     # Initialize state covariance
     state_cov = np.eye(3) * 1e-12
@@ -44,31 +44,35 @@ def main():
     measurement_cov = get_Q_t()
 
     # Keep track of all the states
-    all_states = np.array(state).reshape(1,3,1)
+    all_states = np.zeros((len(time),3,1))
+    all_states[0] = np.array(state)
 
     # Keep track of the prediction states
-    prediction_states = np.empty((1,3,1))
+    prediction_states = np.zeros((len(time),3,1))
 
     # Keep track of the correction states
-    correction_states = np.empty((1,3,1))
+    correction_states = np.zeros((len(sensor_ts),3,1))
 
     # Correction counters
     correction_counter = 0
+    
     # Iterate over time
     for i, t in enumerate(time):
-        print(f"Iteration: {i}, time: {t}")
+        if i%100 == 0:
+            print(f"Iteration: {i}, time: {t}")
+
         # Calculate dt
         if i == 0:
             continue
         else:
             dt = t - time[i-1]
 
-        # Generate random control input (linear/rotational velocity)
-        u = np.hstack((v[i], omega[i])).reshape((2,1))
+        # Control input (linear/rotational velocity)
+        u = np.vstack((v[i], omega[i]))
 
         # Steps 2-3: Prediction
         expected_state, expected_state_cov = predict(state, state_cov, u, process_cov, dt)
-        prediction_states = np.concatenate((prediction_states, expected_state[np.newaxis, :, :]), axis=0)
+        prediction_states[i] = expected_state
         state, state_cov = expected_state, expected_state_cov
 
         # Check if a correction is available
@@ -79,10 +83,10 @@ def main():
 
             # Steps 4-7: Correction
             state, state_cov = correct(state, state_cov, z, measurement_cov)
-            correction_states = np.concatenate((correction_states, state[np.newaxis, :, :]), axis=0)
+            correction_states[correction_counter-1] = state
 
         # Keep track of the all_states
-        all_states = np.concatenate((all_states, state[np.newaxis, :, :]), axis=0)
+        all_states[i] = state
 
     # Plot the results
     plot_filter_trajectories(all_states, 

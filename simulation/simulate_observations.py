@@ -130,7 +130,7 @@ def plot_results(x, y, sensor_measurements, sensor_ts):
     None
     """
     # Convert range and yaw data back to x and y
-    sensor_xy = polar2xy(sensor_measurements)
+    sensor_xy = np.array(polar2xy(sensor_measurements))
 
     fig, ax = plt.subplots(3, 1, figsize=(8, 15))
     

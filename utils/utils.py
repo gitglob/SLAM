@@ -3,8 +3,27 @@
 import numpy as np
 # Local
 
+
 def velocityModel(state, u, dt):
-    """Calculates the movement of the robot (displacement) based on the circular arc velocity model."""
+    """
+    Calculates the movement (displacement) of a robot based on the circular arc velocity model.
+    
+    Parameters:
+    - state (list or array): A list containing the current state of the robot. 
+                            [x, y, theta], where x and y are the position coordinates, 
+                            and theta is the heading/orientation.
+    - u (tuple or list): A tuple containing the control inputs [v, omega], 
+                         where v is the linear velocity and omega is the yaw rate.
+    - dt (float): Time step interval.
+    
+    Returns:
+    - displacement (list): A list containing the displacement [dx, dy, dtheta], 
+                           where dx and dy are the displacements in x and y directions, 
+                           and dtheta is the change in heading/orientation.
+    
+    Raises:
+    - ValueError: If omega is zero, as this leads to division by zero in the circular arc model.
+    """
     # Extract linear velocity and yaw rate
     v, omega = u
 
@@ -14,6 +33,9 @@ def velocityModel(state, u, dt):
     # Noise term to not constrain the final orientation
     gamma = 1e-6
 
+    if omega == 0:
+        raise ValueError("Division by zero in the circular arc velocity model. ω=0.")
+    
     # Displacement from the velocity model - circular arc model
     dx = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
     dy = (v/omega) * np.cos(theta) - (v/omega) * np.cos(theta + omega*dt)
@@ -34,8 +56,8 @@ def polar2xy(polar_coords):
 
     Returns
     -------
-    xy_coords : np.ndarray
-        Shape will be either (N, 2) or (2, 1) corresponding to the input shape. 
+    xy_coords : list
+        Shape will be either (N, 2) or (1, 2) corresponding to the input shape. 
         Contains the converted X and Y coordinates.
     """
 
@@ -49,7 +71,7 @@ def polar2xy(polar_coords):
     x_coords = r * np.cos(theta)
     y_coords = r * np.sin(theta)
 
-    xy_coords = [x_coords, y_coords]
+    xy_coords = [[x, y] for (x, y) in zip(x_coords, y_coords)]
 
     return xy_coords
 
@@ -60,18 +82,24 @@ def xy2polar(xy_coords):
     Parameters
     ----------
     xy_coords : np.ndarray
-        (:, 2) array with X, Y coordinates.
+        Shape can be either (N, 3) or (3, 1), where N is the number of data points. 
+        Contains the X, Y coordinates.
 
     Returns
     -------
-    polar_coords : np.ndarray()
+    polar_coords : list
+        Shape will be either (N, 2) or (1, 2) corresponding to the input shape. 
         (:, 2) shape array with the converted range and yaw coordinates.
     """
-    
-    r = np.sqrt(xy_coords[:, 0]**2 + xy_coords[:, 1]**2)
-    theta = np.arctan2(xy_coords[:, 1], xy_coords[:, 0])
 
-    polar_coords = np.column_stack((r, theta))
+    # Reshape input to ensure it's (N, 2)
+    if xy_coords.shape == (3, 1):
+        xy_coords = xy_coords.T
+    
+    range = np.sqrt(xy_coords[:, 0]**2 + xy_coords[:, 1]**2)
+    bearing = np.arctan2(xy_coords[:, 1], xy_coords[:, 0])
+
+    polar_coords = [[r, theta] for (r, theta) in zip(range, bearing)]
 
     return polar_coords
 
@@ -94,3 +122,4 @@ def normalize_angle(angle):
         Normalized angle in the range [-pi, pi].
     """
     return np.arctan2(np.sin(angle), np.cos(angle))
+    # return angle % (2 * np.pi)
