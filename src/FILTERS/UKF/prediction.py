@@ -2,9 +2,9 @@
 # External
 import numpy as np
 # Local
-from utils import velocityModel
+from src.utils import velocityModel
 from .utils import getSigmaPoints, getWeight
-from simulation import random_seed
+from src.simulation import random_seed
 
 
 np.random.seed(random_seed)

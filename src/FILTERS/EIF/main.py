@@ -2,12 +2,12 @@
 # External
 import numpy as np
 # Local
-from simulation.simulate_observations import simulate_sensors, simulate_spiral_movement
-from simulation import range_noise_std, yaw_noise_std, random_seed
-from visualization.plot_filter_results import plot_filter_trajectories
+from src.simulation.simulate_observations import simulate_sensors, simulate_spiral_movement
+from src.simulation import range_noise_std, yaw_noise_std, random_seed
+from src.visualization.plot_filter_results import plot_filter_trajectories
 from .prediction import predict
 from .correction import correct
-
+from .utils import moment2canonical, canonical2moment
 
 np.random.seed(random_seed)
 
@@ -19,6 +19,7 @@ def getQ(sigma_r=range_noise_std, sigma_phi=yaw_noise_std):
 
     return Q_t
 
+
 def main():
     # Step 1, start the Kalman Filter and initialize the covariance matrices:
     # - Process noise
@@ -26,7 +27,7 @@ def main():
 
     # Simulation - Spiral Trajectory ground truth
     x, y, theta, time, v, omega = simulate_spiral_movement()
-    gt_states = np.column_stack((x, y, theta))
+    gt_states = np.column_stack((x, y, theta)).reshape(len(time), 3, 1)
 
     # Simulation - Spiral Trajectory sensor readings
     (sensor_measurements, sensor_ts) = simulate_sensors(x, y, time)
@@ -36,7 +37,10 @@ def main():
 
     # Initialize state covariance
     state_cov = np.eye(3) * 1e-12
-    
+
+    # Convert from moment to canonical form
+    inf_matrix, inf_vector = moment2canonical(state_cov, state)
+
     # Initialize process noise
     process_cov = np.eye(3)*0.1
 
@@ -55,7 +59,7 @@ def main():
 
     # Correction counters
     correction_counter = 0
-    
+
     # Iterate over time
     for i, t in enumerate(time):
         if i%100 == 0:
@@ -70,10 +74,11 @@ def main():
         # Control input (linear/rotational velocity)
         u = np.vstack((v[i], omega[i]))
 
-        # Steps 2-3: Prediction
-        expected_state, expected_state_cov = predict(state, state_cov, u, process_cov, dt)
+        # Steps 2-5: Prediction
+        expected_inf_matrix, expected_inf_vector, expected_state = predict(inf_matrix, inf_vector, u, process_cov, dt)
+        inf_matrix, inf_vector = expected_inf_matrix, expected_inf_vector
         prediction_states[i] = expected_state
-        state, state_cov = expected_state, expected_state_cov
+        state = expected_state
 
         # Check if a correction is available
         if i < len(time) - 1 and correction_counter < len(sensor_ts) and sensor_ts[correction_counter] < time[i + 1]:
@@ -81,8 +86,9 @@ def main():
             z = sensor_measurements[correction_counter].reshape((2,1))
             correction_counter += 1
 
-            # Steps 4-7: Correction
-            state, state_cov = correct(expected_state, expected_state_cov, z, measurement_cov)
+            # Steps 6-8: Correction
+            inf_matrix, inf_vector = correct(expected_inf_matrix, expected_inf_vector, expected_state, z, measurement_cov)
+            _, state = canonical2moment(inf_matrix, inf_vector)
             correction_states[correction_counter-1] = state
 
         # Keep track of the all_states
@@ -91,11 +97,11 @@ def main():
     # Plot the results
     plot_filter_trajectories(all_states, 
                              prediction_states, correction_states, 
-                             gt_states, "EKF")
-
+                             gt_states, "EIF")
+    
     print(f"# of iterations: {i}")
     print(f"# of corrections: {correction_counter}")
-    print("EKF finished!")
+    print("EIF finished!")
 
 if __name__ == "__main__":
     main()

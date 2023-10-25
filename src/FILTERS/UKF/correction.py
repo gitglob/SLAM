@@ -2,8 +2,8 @@
 # External
 import numpy as np
 # Local
-from utils import normalize_angle, xy2polar
-from simulation import random_seed
+from src.utils import normalize_angle, xy2polar
+from src.simulation import random_seed
 from .utils import getSigmaPoints, getWeight
 
 np.random.seed(random_seed)

@@ -2,13 +2,11 @@
 # External
 import numpy as np
 # Local
-from simulation.simulate_observations import simulate_sensors, simulate_spiral_movement
-from simulation import range_noise_std, yaw_noise_std, random_seed
-from visualization.plot_filter_results import plot_filter_trajectories
+from src.simulation.simulate_observations import simulate_sensors, simulate_spiral_movement
+from src.simulation import range_noise_std, yaw_noise_std, random_seed
+from src.visualization.plot_filter_results import plot_filter_trajectories
 from .prediction import predict
 from .correction import correct
-from .utils import getLamda
-from . import alpha, kappa
 
 
 np.random.seed(random_seed)
@@ -28,7 +26,7 @@ def main():
 
     # Simulation - Spiral Trajectory ground truth
     x, y, theta, time, v, omega = simulate_spiral_movement()
-    gt_states = np.column_stack((x, y, theta))
+    gt_states = np.column_stack((x, y, theta)).reshape(len(time), 3, 1)
 
     # Simulation - Spiral Trajectory sensor readings
     (sensor_measurements, sensor_ts) = simulate_sensors(x, y, time)
@@ -40,10 +38,10 @@ def main():
     state_cov = np.eye(3) * 1e-12
     
     # Initialize process noise
-    process_cov = np.eye(3)*0.0001
+    process_cov = np.eye(3)*0.1
 
     # Initialize measurement noise
-    measurement_cov = getQ()*1e-4
+    measurement_cov = getQ()
 
     # Keep track of all the states
     all_states = np.zeros((len(time),3,1))
@@ -55,18 +53,14 @@ def main():
     # Keep track of the correction states
     correction_states = np.zeros((len(sensor_ts),3,1))
 
-    # Get the UKF parameters
-    num_dim = state.shape[0]
-    lamda = getLamda(alpha, num_dim, kappa)
-
     # Correction counters
     correction_counter = 0
-
+    
     # Iterate over time
     for i, t in enumerate(time):
         if i%100 == 0:
             print(f"Iteration: {i}, time: {t}")
-            
+
         # Calculate dt
         if i == 0:
             continue
@@ -77,7 +71,7 @@ def main():
         u = np.vstack((v[i], omega[i]))
 
         # Steps 2-3: Prediction
-        expected_state, expected_state_cov = predict(state, state_cov, u, process_cov, num_dim, lamda, dt)
+        expected_state, expected_state_cov = predict(state, state_cov, u, process_cov, dt)
         prediction_states[i] = expected_state
         state, state_cov = expected_state, expected_state_cov
 
@@ -88,7 +82,7 @@ def main():
             correction_counter += 1
 
             # Steps 4-7: Correction
-            state, state_cov = correct(expected_state, expected_state_cov, z, measurement_cov, num_dim, lamda)
+            state, state_cov = correct(expected_state, expected_state_cov, z, measurement_cov)
             correction_states[correction_counter-1] = state
 
         # Keep track of the all_states
@@ -97,11 +91,11 @@ def main():
     # Plot the results
     plot_filter_trajectories(all_states, 
                              prediction_states, correction_states, 
-                             gt_states, "UKF")
-    
+                             gt_states, "EKF")
+
     print(f"# of iterations: {i}")
     print(f"# of corrections: {correction_counter}")
-    print("UKF finished!")
+    print("EKF finished!")
 
 if __name__ == "__main__":
     main()

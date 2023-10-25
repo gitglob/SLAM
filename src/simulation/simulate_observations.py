@@ -4,8 +4,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 # Local
-from utils import polar2xy, velocityModel
-from simulation import random_seed
+from src.utils import polar2xy, velocityModel
+from src.simulation import random_seed
 from . import range_noise_std, yaw_noise_std, sensor_frequency
 from . import timesteps, timestep_duration, initial_radius, growth_factor
 

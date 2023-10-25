@@ -2,8 +2,8 @@
 # External
 import numpy as np
 # Local
-from simulation import random_seed
-from utils import normalize_angle
+from src.simulation import random_seed
+from src.utils import normalize_angle
 
 np.random.seed(random_seed)
 

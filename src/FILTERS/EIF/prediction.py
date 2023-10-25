@@ -2,7 +2,7 @@
 # External
 import numpy as np
 # Local
-from utils import velocityModel
+from src.utils import velocityModel
 from .utils import canonical2moment
 
 def getG(state, u, dt):
@@ -16,8 +16,16 @@ def getG(state, u, dt):
 
     # Jacobian of the motion model
     G = np.eye(3,3)
-    G[0,2] = (-v/omega) * np.cos(theta) + (v/omega) * np.cos(theta + omega*dt)
-    G[1,2] = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
+    
+    # Handle the case when omega is zero (or close to zero) - straight line motion
+    epsilon = 1e-6
+    if omega < epsilon:
+        G[0, 2] = -v * np.sin(theta) * dt
+        G[1, 2] = v * np.cos(theta) * dt
+    else:
+        # Jacobian elements for the general motion model (circular arc model)
+        G[0, 2] = (-v/omega) * np.cos(theta) + (v/omega) * np.cos(theta + omega*dt)
+        G[1, 2] = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
 
     return G
 

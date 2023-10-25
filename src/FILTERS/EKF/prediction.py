@@ -2,8 +2,8 @@
 # External
 import numpy as np
 # Local
-from utils import velocityModel
-from simulation import random_seed
+from src.utils import velocityModel
+from src.simulation import random_seed
 
 
 np.random.seed(random_seed)
@@ -17,15 +17,18 @@ def getG(state, u, dt):
     # Extract heading
     theta = state[2]
 
-    # Check for division by zero
+    # Initialize the Jacobian with identity matrix
+    G = np.eye(3, 3)
+
+    # Handle the case when omega is zero (or close to zero) - straight line motion
     epsilon = 1e-6
     if omega < epsilon:
-        raise ValueError("Division by zero in prediction Jacobian calculation.")
-
-    # Jacobian of the motion model
-    G = np.eye(3,3)
-    G[0,2] = (-v/omega) * np.cos(theta) + (v/omega) * np.cos(theta + omega*dt)
-    G[1,2] = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
+        G[0, 2] = -v * np.sin(theta) * dt
+        G[1, 2] = v * np.cos(theta) * dt
+    else:
+        # Jacobian elements for the general motion model (circular arc model)
+        G[0, 2] = (-v/omega) * np.cos(theta) + (v/omega) * np.cos(theta + omega*dt)
+        G[1, 2] = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
 
     return G
 

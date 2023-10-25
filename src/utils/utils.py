@@ -33,13 +33,17 @@ def velocityModel(state, u, dt):
     # Noise term to not constrain the final orientation
     gamma = 1e-6
 
+    # Handle the case when omega is zero (straight line motion)
     if omega == 0:
-        raise ValueError("Division by zero in the circular arc velocity model. ω=0.")
+        dx = v * np.cos(theta) * dt
+        dy = v * np.sin(theta) * dt
+        dtheta = 0
+    else:
+        # Displacement from the velocity model - circular arc model
+        dx = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
+        dy = (v/omega) * np.cos(theta) - (v/omega) * np.cos(theta + omega*dt)
+        dtheta = omega*dt #+ gamma*dt
     
-    # Displacement from the velocity model - circular arc model
-    dx = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
-    dy = (v/omega) * np.cos(theta) - (v/omega) * np.cos(theta + omega*dt)
-    dtheta = omega*dt #+ gamma*dt
     displacement = [dx, dy, dtheta]
 
     return displacement
