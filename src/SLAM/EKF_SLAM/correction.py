@@ -12,14 +12,14 @@ def getQ(sigma_r=100, sigma_phi=100):
 
     return Q_t
 
-def initializeLandmarkPosition(expected_state, r, phi):
+def initializeLandmarkPosition(expected_robot_state, landmark_state):
     """Initializes the position of a landmark if it has not been seen before."""
-    expected_state_landmark_x = expected_state[0] + r*np.cos(phi + expected_state[2])
-    expected_state_landmark_y = expected_state[1] + r*np.sin(phi + expected_state[2])
+    expected_state_landmark_x = expected_robot_state[0] + landmark_state[0]*np.cos(landmark_state[1] + expected_robot_state[2])
+    expected_state_landmark_y = expected_robot_state[1] + landmark_state[0]*np.sin(landmark_state[1] + expected_robot_state[2])
 
-    expected_state = np.array([expected_state_landmark_x, expected_state_landmark_y]).reshape(2,1)
+    expected_state_landmark = np.array([expected_state_landmark_x, expected_state_landmark_y]).reshape(2,1)
 
-    return expected_state
+    return expected_state_landmark
 
 def getDelta(expected_state, expected_state_landmark):
     """Returns the difference between expected robot's position and the expected landmark's position."""
@@ -97,14 +97,13 @@ def correct(expected_state, expected_state_cov):
     # Step 7
     for i in range(len(observed_features)):
         z = observed_features[i].reshape((2,1))
-        r, phi = z
 
         # Step 8
         j = i
         # Step 9
         if j not in j_seen:
             # Step 10
-            mi_landmark_pred = initializeLandmarkPosition(expected_state, r, phi)
+            mi_landmark_pred = initializeLandmarkPosition(expected_state, z)
         
         # Step 11: endif
 
