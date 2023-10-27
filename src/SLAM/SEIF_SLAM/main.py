@@ -6,7 +6,7 @@ from .motion_update import update_motion
 from .measurement_update import update_measurement
 from .state_estimate_update import update_state_estimate
 from .sparsification import sparsify
-from .utils import moment2canonical, canonical2moment
+from .utils import moment2canonical, detect_landmarks
 from . import NUM_LANDMARKS
 
 # Step 1
@@ -56,16 +56,18 @@ def main():
         # Step 2: Measurement Update
         inf_vector, inf_matrix = update_measurement(expected_inf_vector, expected_inf_matrix, expected_state, observed_features, measurement_cov, seen_features, state_cov)
 
+        # Step 2.5: Detect passive, new active, and active landmarks
+        m_passive_idx, m_new_active_idx, m_active_idx = detect_landmarks(prev_inf_matrix, inf_matrix)
+        prev_inf_matrix = inf_matrix
+
         # Step 3: State Estimate Update
         state_estimate = update_state_estimate(inf_matrix, inf_vector)
 
         # Step 4: Sparsification
-        sparse_inf_vector, sparse_inf_matrix = sparsify(inf_vector, inf_matrix, state_estimate)
+        sparse_inf_vector, sparse_inf_matrix = sparsify(inf_vector, inf_matrix, state_estimate, m_new_active_idx, m_active_idx)
 
         # Step 5: Return the sparce information vector and matrix, and the state estimate
-        inf_vector = sparse_inf_vector
-        inf_matrix = sparse_inf_matrix
-        state = state_estimate        
+        inf_vector, inf_matrix, state = sparse_inf_vector, sparse_inf_matrix, state_estimate
 
 if __name__ == "__main__":
     main()

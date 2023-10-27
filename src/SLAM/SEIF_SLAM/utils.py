@@ -18,3 +18,40 @@ def canonical2moment(inf_matrix, inf_vector):
     state = state_cov @ inf_vector
 
     return state_cov, state
+
+def detect_landmarks(prev_inf_matrix, current_inf_matrix, threshold=1e-5):
+    """
+    Detect passive, active, and new-active landmarks from the current and previous information matrices.
+
+    Parameters:
+    - prev_inf_matrix (numpy.ndarray): The previous information matrix.
+    - current_inf_matrix (numpy.ndarray): The current information matrix.
+    - threshold (float): The minimum value in the information matrix to consider a landmark active.
+
+    Returns:
+    - tuple: Sets of indices representing active, passive, and new-active landmarks.
+    """
+
+    # Assuming the first 3 rows/columns of the information matrix are for robot pose
+    num_landmarks = (current_inf_matrix.shape[0] - 3) // 2
+    active_landmarks = set()
+    passive_landmarks = set()
+
+    # Detect active and passive landmarks from current information matrix
+    for i in range(num_landmarks):
+        idx = 3 + 2*i
+        # If the absolute values in the matrix for this landmark are larger than the threshold
+        # then the landmark is active
+        if np.abs(current_inf_matrix[idx:idx+2, idx:idx+2]).sum() > threshold:
+            active_landmarks.add(i)
+        else:
+            passive_landmarks.add(i)
+
+    # Detect landmarks that were passive in the previous step but are active now
+    new_active_landmarks = set()
+    for i in range(num_landmarks):
+        idx = 3 + 2*i
+        if i in active_landmarks and np.abs(prev_inf_matrix[idx:idx+2, idx:idx+2]).sum() <= threshold:
+            new_active_landmarks.add(i)
+
+    return passive_landmarks, new_active_landmarks, active_landmarks

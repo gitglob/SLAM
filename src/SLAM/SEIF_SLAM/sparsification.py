@@ -7,12 +7,12 @@ from numpy.linalg import inv
 from . import NUM_LANDMARKS
 
 # Step 1
-def getProjectionMatrices(m_0_idx):
+def getProjectionMatrices(m_new_active_idx):
     """
     Constructs the F matrices, which project different states to their observations.
     
     Parameters:
-    - m_0_idx (int): Index of the new active landmarks.
+    - m_new_active_idx (int): Index of the new active landmarks.
     
     Returns:
     - tuple: The F matrices for the m0 state, the combined x and m0 states, and the x state.
@@ -26,25 +26,25 @@ def getProjectionMatrices(m_0_idx):
 
     # Construct Fm0 for the new active landmarks
     Fm0 = deepcopy(F)
-    for idx in m_0_idx:
+    for idx in m_new_active_idx:
         Fm0[:3, 3 + 2*idx : 3 + 2*idx + 2] = np.eye(2) 
 
     # Construct Fxm0 for both state and new active landmarks
     Fxm0 = deepcopy(F)
     Fxm0[:3,:3] = np.eye(3)
-    for idx in m_0_idx:
+    for idx in m_new_active_idx:
         Fxm0[:3, 3 + 2*idx : 3 + 2*idx + 2] = np.eye(2)
 
     return Fm0, Fxm0, Fx
 
 # Step 2
-def getInfMatrix0(m_active_idx, m_0_idx, inf_matrix):
+def getInfMatrix0(m_new_active_idx, m_active_idx, inf_matrix):
     """
     Compute a specific representation of the information matrix considering active landmarks and a new active landmark.
 
     Parameters:
     - m_active_idx (list): Indices of active landmarks.
-    - m_0_idx (int): Index of new active landmarks.
+    - m_new_active_idx (int): Index of new active landmarks.
     - inf_matrix (numpy.ndarray): The current information matrix.
 
     Returns:
@@ -53,15 +53,15 @@ def getInfMatrix0(m_active_idx, m_0_idx, inf_matrix):
     F = np.zeros((3, 3 + 2*NUM_LANDMARKS))
     
     # Construct the F matrix considering active landmarks and a new active landmarks
-    F_x_m_active_m_0 = deepcopy(F)
-    F_x_m_active_m_0[:3,:3] = np.eye(3)
+    F_x_m_active_m_new_active = deepcopy(F)
+    F_x_m_active_m_new_active[:3,:3] = np.eye(3)
     for idx in m_active_idx:
-        F_x_m_active_m_0[:3, 3 + 2*idx : 3 + 2*idx + 2] = np.eye(2) 
-    for idx in m_0_idx:
-        F_x_m_active_m_0[:3, 3 + 2*idx : 3 + 2*idx + 2] = np.eye(2)
+        F_x_m_active_m_new_active[:3, 3 + 2*idx : 3 + 2*idx + 2] = np.eye(2) 
+    for idx in m_new_active_idx:
+        F_x_m_active_m_new_active[:3, 3 + 2*idx : 3 + 2*idx + 2] = np.eye(2)
 
     # Compute the transformed information matrix
-    inf_matrix0 = F_x_m_active_m_0 @ F_x_m_active_m_0.T @ inf_matrix @ F_x_m_active_m_0 @ F_x_m_active_m_0.T
+    inf_matrix0 = F_x_m_active_m_new_active @ F_x_m_active_m_new_active.T @ inf_matrix @ F_x_m_active_m_new_active @ F_x_m_active_m_new_active.T
 
     return inf_matrix0
 
@@ -110,12 +110,12 @@ def getSparseInfVector(inf_vector, sparse_inf_matrix, inf_matrix, state):
 
     return sparse_inf_vector
 
-def sparsify(inf_vector, inf_matrix, state):
+def sparsify(inf_vector, inf_matrix, state, m_new_active_idx, m_active_idx):
     # Step 1
-    Fm0, Fxm0, Fx = getProjectionMatrices()
+    Fm0, Fxm0, Fx = getProjectionMatrices(m_new_active_idx)
     
     # Step 2
-    inf_matrix0 = getInfMatrix0(Fm0, Fx, Fx, inf_matrix)
+    inf_matrix0 = getInfMatrix0(m_new_active_idx, m_active_idx, Fx, Fx, inf_matrix)
     
     # Step 3
     sparse_inf_matrix = getSparseInfMatrix(inf_matrix, inf_matrix0, Fm0, Fxm0, Fx)
