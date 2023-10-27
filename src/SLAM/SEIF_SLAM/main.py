@@ -6,7 +6,7 @@ from .motion_update import update_motion
 from .measurement_update import update_measurement
 from .state_estimate_update import update_state_estimate
 from .sparsification import sparsify
-from .utils import moment2canonical, detect_landmarks
+from .utils import moment2canonical, detect_landmarks, pseudo_observe_landmarks
 from . import NUM_LANDMARKS
 
 # Step 1
@@ -37,6 +37,9 @@ def main():
     # Initialize measurement noise
     measurement_cov = getQ()
 
+    # Initialize a list which will hold all the seen landmarks
+    all_seen_features = []
+
     # Iterate over time
     for i, t in enumerate(time):
         # Calculate dt
@@ -53,8 +56,11 @@ def main():
         # Step 1: Motion Update
         expected_inf_matrix, expected_inf_vector, expected_state = update_motion(inf_vector, inf_matrix, state, u, process_cov, dt)
         
+        # Step 1.5: Get the observed landmarks
+        observed_features = pseudo_observe_landmarks()
+
         # Step 2: Measurement Update
-        inf_vector, inf_matrix = update_measurement(expected_inf_vector, expected_inf_matrix, expected_state, observed_features, measurement_cov, seen_features, state_cov)
+        inf_vector, inf_matrix, all_seen_features = update_measurement(expected_inf_vector, expected_inf_matrix, expected_state, observed_features, measurement_cov, all_seen_features, state_cov)
 
         # Step 2.5: Detect passive, new active, and active landmarks
         m_passive_idx, m_new_active_idx, m_active_idx = detect_landmarks(prev_inf_matrix, inf_matrix)

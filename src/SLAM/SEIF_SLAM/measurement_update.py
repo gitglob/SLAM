@@ -3,7 +3,6 @@
 import numpy as np
 from numpy.linalg import inv
 # Local
-from utils import velocityModel
 from . import NUM_LANDMARKS
 
 # Step 5
@@ -63,7 +62,7 @@ def update_inf_matrix(expected_inf_matrix, state_cov, H, Q):
     return inf_matrix
 
 # Motion Update
-def update_measurement(expected_inf_vector, expected_inf_matrix, expected_state, observed_features, measurement_cov, seen_features, state_cov):
+def update_measurement(expected_inf_vector, expected_inf_matrix, expected_state, observed_features, measurement_cov, all_seen_features, state_cov):
     # Step 1 - get measurement covariance\
     Q = measurement_cov
 
@@ -74,12 +73,12 @@ def update_measurement(expected_inf_vector, expected_inf_matrix, expected_state,
         j = i
 
         # Step 4
-        if z not in seen_features:
+        if z not in all_seen_features:
             # Step 5
             expected_landmark_state = initializeLandmarkPosition(expected_state, z)
 
             # Keep track of seen features
-            seen_features.append(z)
+            all_seen_features.append(z)
 
             # Step 6 - endif
 
@@ -104,4 +103,4 @@ def update_measurement(expected_inf_vector, expected_inf_matrix, expected_state,
     inf_matrix = update_inf_matrix(expected_inf_matrix, state_cov, H, Q)
 
     # Step 14
-    return inf_vector, inf_matrix
+    return inf_vector, inf_matrix, all_seen_features

@@ -1,4 +1,9 @@
+# Standard
+# Externals
 import numpy as np
+import random
+# Local
+from . import NUM_LANDMARKS
 
 def moment2canonical(state_cov, state):
     """Converts the state and state covariance from the moment/standard form
@@ -33,12 +38,11 @@ def detect_landmarks(prev_inf_matrix, current_inf_matrix, threshold=1e-5):
     """
 
     # Assuming the first 3 rows/columns of the information matrix are for robot pose
-    num_landmarks = (current_inf_matrix.shape[0] - 3) // 2
     active_landmarks = set()
     passive_landmarks = set()
 
     # Detect active and passive landmarks from current information matrix
-    for i in range(num_landmarks):
+    for i in range(NUM_LANDMARKS):
         idx = 3 + 2*i
         # If the absolute values in the matrix for this landmark are larger than the threshold
         # then the landmark is active
@@ -49,9 +53,22 @@ def detect_landmarks(prev_inf_matrix, current_inf_matrix, threshold=1e-5):
 
     # Detect landmarks that were passive in the previous step but are active now
     new_active_landmarks = set()
-    for i in range(num_landmarks):
+    for i in range(NUM_LANDMARKS):
         idx = 3 + 2*i
         if i in active_landmarks and np.abs(prev_inf_matrix[idx:idx+2, idx:idx+2]).sum() <= threshold:
             new_active_landmarks.add(i)
 
     return passive_landmarks, new_active_landmarks, active_landmarks
+
+def pseudo_observe_landmarks(NUM_LANDMARKS):
+    """
+    Get two unique random integers ranging from 0 to NUM_LANDMARKS-1.
+
+    Parameters:
+    - NUM_LANDMARKS (int): The upper limit for the random integers.
+
+    Returns:
+    - tuple: Two unique random integers.
+    """
+
+    return tuple(random.sample(range(NUM_LANDMARKS), 2))
