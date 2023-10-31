@@ -2,7 +2,7 @@
 import numpy as np
 from numpy.linalg import inv
 # Local
-from utils import velocityModel
+from src.utils import velocityModel
 from . import NUM_LANDMARKS
 
 

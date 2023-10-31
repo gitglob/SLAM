@@ -1,4 +1,5 @@
 # Standard
+import os
 # External
 import numpy as np
 # Local
@@ -127,3 +128,56 @@ def normalize_angle(angle):
     """
     return np.arctan2(np.sin(angle), np.cos(angle))
     # return angle % (2 * np.pi)
+
+def read_world(filename):
+    """Read world.dat file."""
+    data_dir = os.path.join('exercises', '06_ekf_slam_framework', 'data', filename)
+    
+    data = {'ids': [], 'xy': []}
+    
+    with open(data_dir, 'r') as file:
+        for line in file.readlines():
+            landmark_id, x, y = map(float, line.strip().split())
+            data['ids'].append(landmark_id-1)
+            data['xy'].append([x, y])
+    
+    return data
+
+def read_data(filename):
+    """Read sensor_data.dat file."""
+    data_dir = os.path.join('exercises', '06_ekf_slam_framework', 'data', filename)
+    
+    # Initialize the dictionary with empty lists
+    data = {'timesteps': [], 'odometry': [], 'sensor': []}
+    
+    timestep = 1
+
+    with open(data_dir, 'r') as file:
+        lines = file.readlines()
+        i = 0
+        
+        while i < len(lines):
+            line = lines[i].strip().split()
+            
+            if line[0] == "ODOMETRY":
+                data['timesteps'].append(timestep)
+                data['odometry'].append(list(map(float, line[1:])))
+                i += 1  # Move to the next line
+                
+                # Add sensor data until the next ODOMETRY or end of file is reached
+                sensors = []
+                while i < len(lines):
+                    line_elements = lines[i].strip().split()
+                    if line_elements[0] == "SENSOR" and line_elements[1].isdigit():
+                        sensor_id = int(line_elements[1]) - 1
+                        sensor_data = [sensor_id] + list(map(float, line_elements[2:]))
+                        sensors.append(sensor_data)
+                        i += 1
+                    else:
+                        break
+                data['sensor'].append(sensors)
+                
+                timestep += 1
+
+    return data
+

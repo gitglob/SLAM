@@ -1,7 +1,7 @@
+# Standard
 # External
 import numpy as np
 # Local
-from . import NUM_LANDMARKS
 
 
 def getQ(sigma_r=100, sigma_phi=100):
@@ -34,7 +34,7 @@ def predictObservation(q, delta, state_theta):
 
     return z_pred
 
-def getF_x_landmark(j):
+def getFx_landmark(j, NUM_LANDMARKS):
     "Returns the F matrix, which maps the world state (robot + landmarks) to the robot state (only robot)."
     F_upper_left = np.eye(3)
     F_upper_right = np.zeros((3, 2*j-2 +2 +2*(NUM_LANDMARKS - j)))
@@ -68,7 +68,7 @@ def getKalmanGain(expected_state_cov, H, Q):
 
     return K
 
-def updateStateCovPred(K, H, expected_state_cov):
+def updateStateCovPred(K, H, expected_state_cov, NUM_LANDMARKS):
     """Updates the state uncertainty using the Kalman Gain and the Jacobian of the function that computes the expected observation."""
     I = np.eye(NUM_LANDMARKS*2+3, NUM_LANDMARKS*2+3)
 
@@ -84,28 +84,29 @@ def updateExpectedPred(expected_state, K, z, z_pred):
     return expected_state
 
 
-def correct(expected_state, expected_state_cov):
+def correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_features, all_seen_features):
     """Performs the correction steps of the EKF SLAM algorithm."""
     # Step 6
     Q = getQ()
 
-    # List of observed landmarks
-    j_seen = []
-
-    # Step 2
-    observed_features = np.array([[0.1,0.1], [1,1], [2,2], [3,3], [4,4]]) # observed features
     # Step 7
-    for i in range(len(observed_features)):
-        z = observed_features[i].reshape((2,1))
+    for feature in observed_features:
+        z = np.vstack(feature[1:3])
 
         # Step 8
-        j = i
+        j = feature[0]
+
         # Step 9
-        if j not in j_seen:
+        if j not in all_seen_features:
+            print(f"New landmark: {j}")
+
             # Step 10
             mi_landmark_pred = initializeLandmarkPosition(expected_state, z)
+            all_seen_features.append(j)
         
-        # Step 11: endif
+            # Step 11: endif
+        else:
+            mi_landmark_pred = expected_state[3 + 2*j : 3 + 2*j + 2]
 
         # Step 12
         delta = getDelta(expected_state, mi_landmark_pred)
@@ -117,10 +118,10 @@ def correct(expected_state, expected_state_cov):
         z_pred = predictObservation(q, delta, expected_state[2])
 
         # Step 15
-        F_x_landmark = getF_x_landmark(j)
+        Fx_landmark = getFx_landmark(j, NUM_LANDMARKS)
 
         # Step 16: Jacobian of Expected Observation
-        H = getH(q, delta, F_x_landmark)
+        H = getH(q, delta, Fx_landmark)
 
         # Step 17: Kalman Fain
         K = getKalmanGain(expected_state_cov, H, Q)
@@ -129,7 +130,7 @@ def correct(expected_state, expected_state_cov):
         expected_state = updateExpectedPred(expected_state, K, z, z_pred)
 
         # Step 19: Expected Uncertainty Update
-        expected_state_cov = updateStateCovPred(K, H, expected_state_cov)
+        expected_state_cov = updateStateCovPred(K, H, expected_state_cov, NUM_LANDMARKS)
 
     # Step 20: endfor
 
