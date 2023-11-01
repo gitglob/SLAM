@@ -23,6 +23,26 @@ def normalize_all_bearings(z):
     return z
 
 def drawellipse(x, a, b, color):
+    """
+    Draw an ellipse with specified parameters on a 2D plane.
+
+    Parameters
+    ----------
+    x : tuple
+        A tuple containing the center (xo, yo) of the ellipse and rotation angle in radians. Format: (xo, yo, angle).
+    a : float
+        Semi-major axis length of the ellipse.
+    b : float
+        Semi-minor axis length of the ellipse.
+    color : str
+        Color of the ellipse to be drawn.
+
+    Notes
+    -----
+    - This function assumes that necessary libraries like numpy (as np) and matplotlib.pyplot (as plt) are already imported.
+    - The ellipse is plotted with a resolution defined by NPOINTS.
+    """
+    
     NPOINTS = 100  # point density or resolution
 
     # Compose point vector
@@ -43,7 +63,28 @@ def drawellipse(x, a, b, color):
     plt.axis('equal')  # to make sure the ellipse looks correct
     plt.show()
 
-def drawprobellipse(x, C, alpha, color):    
+def drawprobellipse(x, C, alpha, color):
+    """
+    Draw a probability ellipse based on covariance matrix and confidence level.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        A 2-element array containing the x and y coordinates of the ellipse center.
+    C : np.ndarray
+        2x2 covariance matrix.
+    alpha : float
+        Confidence level for which the ellipse will represent.
+        Should be in the interval (0, 1). E.g., 0.95 for a 95% confidence ellipse.
+    color : str
+        Color of the ellipse to be drawn.
+
+    Notes
+    -----
+    - The function requires numpy (as np) and assumes the `drawellipse` function is defined and available.
+    - The ellipse is calculated based on the provided covariance matrix and scaled according to the desired confidence level.
+    """
+
     # Calculate unscaled half axes
     sxx = C[0,0]
     syy = C[1,1]
@@ -80,18 +121,33 @@ def drawprobellipse(x, C, alpha, color):
 
 def drawrect(pose, length, width, corner_radius, fill_flag, color):
     """
-    Draw a rectangle in matplotlib.
+    Draw a rotated rectangle (with optionally rounded corners) on a 2D plane.
 
-    Parameters:
-    - pose: A list or tuple containing the pose of the rectangle [x, y, theta].
-    - length: The length of the rectangle.
-    - width: The width of the rectangle.
-    - corner_radius: Radius of the rounded corners.
-    - fill_flag: 1 to fill the rectangle with the specified color, 0 otherwise.
-    - color: Color of the rectangle.
+    Parameters
+    ----------
+    pose : tuple
+        A tuple containing the x and y coordinates of the rectangle's center, and its rotation angle in radians.
+        Format: (x, y, theta).
+    length : float
+        Length (or major axis) of the rectangle.
+    width : float
+        Width (or minor axis) of the rectangle.
+    corner_radius : float
+        Radius of the rounded corners. Use 0 for sharp corners.
+    fill_flag : bool
+        True if the rectangle should be filled, False otherwise.
+    color : str
+        Color of the rectangle to be drawn.
 
-    Returns:
-    - Patch object representing the rectangle.
+    Returns
+    -------
+    rectangle : matplotlib.patches.FancyBboxPatch
+        The drawn rectangle object.
+
+    Notes
+    -----
+    - This function assumes that necessary libraries like numpy (as np) and matplotlib.pyplot (as plt) and
+      matplotlib.patches (as mpatches) are already imported.
     """
     x, y, theta = pose
     rectangle = mpatches.FancyBboxPatch((x - length/2, y - width/2), 
@@ -109,6 +165,35 @@ def drawrect(pose, length, width, corner_radius, fill_flag, color):
     return rectangle
 
 def drawrobot(xvec, color, robot_type=2, B=0.4, L=0.6):
+    """
+    Draw a representation of the robot on the current plot.
+
+    Parameters
+    ----------
+    xvec : np.ndarray or list
+        A vector of shape (3,) representing the robot's [x, y, theta] state.
+    color : str
+        The color to use for the robot representation.
+    robot_type : int, optional
+        The type of robot representation to draw. Supported types are:
+        0 - Origin cross
+        1 - Wheel pair with axis and arrow
+        2 - Wheel pair with axis, arrow, and circular contour
+        3 - Circular contour with centerline
+        4 - Wheel pair with axis, arrow, and rectangular contour
+        5 - Rectangular contour with centerline
+        Default is 2.
+    B : float, optional
+        Robot's wheelbase width or relevant dimension depending on robot type. Default is 0.4.
+    L : float, optional
+        Robot's length or relevant dimension depending on robot type. Default is 0.6.
+
+    Notes
+    -----
+    - The function assumes the `drawrect` and `drawellipse` functions are defined and available.
+    - Robot's representation is drawn on the current active plot.
+    """
+    
     x, y, theta = xvec
     T = np.array([x, y]).reshape((2,1))
     R = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]]).reshape((2,2))
@@ -166,13 +251,32 @@ def plot_state(mu, state_cov, landmarks, timestep, observedLandmarks, z):
     """
     Visualizes the state of the EKF SLAM algorithm.
 
-    The resulting plot displays the following information:
-    - mu: Current robot state estimate
-    - state_cov: Current robot state uncertainty
-    - landmarks: Map landmarks ground truth (black)
-    - current robot pose estimate (red)
-    - current landmark pose estimates (blue)
-    - visualization of the observations made at this time step (line between robot and landmark)
+    Parameters
+    ----------
+    mu : np.ndarray
+        Current estimate of the robot's state and landmarks, 
+        starting with the robot's x, y, and theta, followed by x, y of each landmark.
+    state_cov : np.ndarray
+        Current state covariance matrix. Represents the uncertainty in the robot's state and landmark estimates.
+    landmarks : dict
+        Dictionary containing the ground truth positions of landmarks in the map.
+    timestep : int
+        The current time step for which this state represents.
+    observedLandmarks : list of bool
+        List indicating which landmarks have been observed at the current time step.
+    z : list of tuples
+        List of observations made at the current time step. Each tuple contains (landmark ID, observation data).
+
+    Notes
+    -----
+    - The resulting plot displays the following information:
+      - `mu`: Current robot state estimate (red).
+      - `state_cov`: Uncertainty ellipses around the robot's state and landmark estimates.
+      - `landmarks`: Ground truth landmark positions (black `+` markers).
+      - Estimated landmark positions (blue `o` markers).
+      - Observations made at the current time step (lines between robot and observed landmarks).
+    - The function assumes `drawprobellipse` and `drawrobot` functions are defined and available.
+    - The plot is saved as a PNG file in the 'results/slam/' directory.
     """
 
     plt.figure()
