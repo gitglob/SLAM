@@ -6,22 +6,6 @@ from matplotlib import pyplot as plt
 from scipy.stats import chi2
 # Local
 
-def normalize_angle(phi):
-    """Normalize phi to be between -pi and pi."""
-    while phi > np.pi:
-        phi -= 2 * np.pi
-    while phi < -np.pi:
-        phi += 2 * np.pi
-    return phi
-
-def normalize_all_bearings(z):
-    """Go over the observations vector and normalize the bearings.
-    The expected format of z is [range, bearing, range, bearing, ...]"""
-    
-    for i in range(1, len(z), 2):
-        z[i] = normalize_angle(z[i])
-    return z
-
 def drawellipse(x, a, b, color):
     """
     Draw an ellipse with specified parameters on a 2D plane.
@@ -61,7 +45,6 @@ def drawellipse(x, a, b, color):
     # Plot
     plt.plot(p[0, :], p[1, :], color=color, linewidth=2)
     plt.axis('equal')  # to make sure the ellipse looks correct
-    plt.show()
 
 def drawprobellipse(x, C, alpha, color):
     """
@@ -193,7 +176,7 @@ def drawrobot(xvec, color, robot_type=2, B=0.4, L=0.6):
     - The function assumes the `drawrect` and `drawellipse` functions are defined and available.
     - Robot's representation is drawn on the current active plot.
     """
-    
+
     x, y, theta = xvec
     T = np.array([x, y]).reshape((2,1))
     R = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]]).reshape((2,2))
@@ -247,7 +230,7 @@ def drawrobot(xvec, color, robot_type=2, B=0.4, L=0.6):
     else:
         print("Unsupported robot type")
 
-def plot_state(mu, state_cov, landmarks, timestep, observedLandmarks, z):
+def plot_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, observed_landmarks):
     """
     Visualizes the state of the EKF SLAM algorithm.
 
@@ -262,9 +245,9 @@ def plot_state(mu, state_cov, landmarks, timestep, observedLandmarks, z):
         Dictionary containing the ground truth positions of landmarks in the map.
     timestep : int
         The current time step for which this state represents.
-    observedLandmarks : list of bool
-        List indicating which landmarks have been observed at the current time step.
-    z : list of tuples
+    all_seen_landmarks : list of bool
+        List indicating which landmarks have been observed up to the current time step.
+    observed_landmarks : list of tuples
         List of observations made at the current time step. Each tuple contains (landmark ID, observation data).
 
     Notes
@@ -282,27 +265,36 @@ def plot_state(mu, state_cov, landmarks, timestep, observedLandmarks, z):
     plt.figure()
     plt.clf()
     plt.grid(True)
-    
-    # Convert the landmarks struct to a more Pythonic structure
-    L = np.vstack([landmarks["xy"]])
 
-    drawprobellipse(mu[:3], state_cov[:3,:3], 0.6, 'r')
-    plt.plot(L[:,0], L[:,1], 'k+', markersize=10, linewidth=5)
-
-    for i, observed in enumerate(observedLandmarks):
-        if observed:
-            plt.plot(mu[2*i + 3], mu[2*i + 4], 'bo', markersize=10, linewidth=5)
-            drawprobellipse(mu[2*i + 3 : 2*i + 5], state_cov[2*i + 3 : 2*i + 5, 2*i + 3 : 2*i + 5], 0.6, 'b')
-            
-    for obs in z:
-        id = obs[0]
-        mX = mu[2*id + 3]
-        mY = mu[2*id + 4]
-        plt.plot([mu[0], mX], [mu[1], mY], 'k', linewidth=1)
-        
+    # Draw the robot state
     drawrobot(mu[:3], 'r', 3, 0.3, 0.3)
-    plt.xlim([-2, 12])
-    plt.ylim([-2, 12])
+
+    # Draw a probability ellipse based on the covariance matrix of the robot
+    drawprobellipse(mu[:3], state_cov[:3,:3], 0.6, 'r')
+
+    # Draw the ground truth of the landmarks
+    for i in range(len(landmarks["xy"])):
+        plt.scatter(landmarks["xy"][i][0], landmarks["xy"][i][1], c='k', marker='+', s=100) # label=f"Landmark #{landmarks['ids'][i]} - G.T."
+
+    for l in all_seen_landmarks:
+        # Draw the curently observed landmarks
+        plt.scatter(mu[2*l + 3], mu[2*l + 4], c='b', marker='o', s=10) # , label=f"Landmark #{l} - state"
+
+        # Draw a probability ellipse based on the covariance matrix of the observed landmarks
+        drawprobellipse(mu[2*l + 3 : 2*l + 5], state_cov[2*l + 3 : 2*l + 5, 2*l + 3 : 2*l + 5], 0.6, 'b')
+            
+    # Draw the observation that the robot just made
+    for obs in observed_landmarks:
+        l = obs[0]
+        mX = mu[2*l + 3]
+        mY = mu[2*l + 4]
+        plt.plot(mu[0], mX, '--k', linewidth=1) # label=f"Landmark #{l} - observation X"
+        plt.plot(mu[1], mY, '--k', linewidth=1) # label=f"Landmark #{l} - observation Y"
+
+    # plt.xlim([-2, 12])
+    # plt.ylim([-2, 12])
+
+    # plt.legend()
 
     filename = f'results/slam/ekf_{timestep:03}.png'
     plt.savefig(filename)

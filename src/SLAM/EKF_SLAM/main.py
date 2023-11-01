@@ -1,3 +1,4 @@
+# Standard
 # External
 import numpy as np
 # Local
@@ -6,6 +7,14 @@ from src.visualization.plot_slam import plot_state
 from .prediction import predict
 from .correction import correct
 
+def getFx(NUM_LANDMARKS):
+    """Calculates the Fx matrix, which is essential to apply the motion model to the pose state, and not the landmarks.
+    Fx maps the robot's state from a low dimensional space, to a high dimensional space."""
+
+    Fx = np.zeros((3, 3 + 2*NUM_LANDMARKS))
+    Fx[:3, :3] = np.eye(3)
+
+    return Fx
 
 def main():
     # Read world and sensor data
@@ -18,42 +27,45 @@ def main():
 
     # Initialize state covariance
     state_cov = np.zeros((3 + NUM_LANDMARKS*2, 3 + NUM_LANDMARKS*2))
-    state_cov[3:3 + NUM_LANDMARKS*2, 3:3 + NUM_LANDMARKS*2] = np.eye(NUM_LANDMARKS*2) * 1000
+    state_cov[3:, 3:] = np.eye(NUM_LANDMARKS*2) * 1000
     
     # Initialize process noise
-    process_cov = np.zeros((3 + NUM_LANDMARKS*2, 3 + NUM_LANDMARKS*2))
+    process_cov = np.zeros((3,3))
     process_cov[0,0] = 0.1
     process_cov[1,1] = 0.1
     process_cov[2,2] = 0.01
     
+    # Initialize Fx
+    Fx = getFx(NUM_LANDMARKS)
+    
     # Initialize observed features
-    all_seen_features = []
+    landmark_history = []
 
     # Iterate over time
     for i, t in enumerate(data["timesteps"]):
         if i%100 == 0:
             print(f"Iteration: {i}, time: {t}")
-            
-        # Calculate dt
-        if i == 0:
-            continue
-        else:
-            dt = t - data["timesteps"][i-1]
 
-        # Generate random control input (linear/rotational velocity)
-        omega1 = (data["odometry"][i][0] - data["odometry"][i-1][0]) / dt
-        v = (data["odometry"][i][1] - data["odometry"][i-1][1]) / dt
-        omega2 = (data["odometry"][i][2] - data["odometry"][i-1][2]) / dt
-        u = np.array([omega1, v, omega2]).reshape((3,1))
+        if i==10:
+            break
+            
+        # Extract velocity profile from the odometry readings
+        dtheta1 = data["odometry"][i][0]
+        dr = data["odometry"][i][1]
+        dtheta2 = data["odometry"][i][2]
+        displacement = np.array([dtheta1, dr, dtheta2]).reshape((3,1))
 
         # Steps 1-5: Prediction
-        expected_state, expected_state_cov = predict(state, state_cov, u, process_cov, dt, NUM_LANDMARKS)
-        
+        expected_state, expected_state_cov = predict(state, state_cov, displacement, process_cov, Fx, NUM_LANDMARKS)
+
+        # Get the current landmark observations
+        observed_landmarks = data["sensor"][i]
+
         # Steps 6-23: Correction
-        state, state_cov = correct(expected_state, expected_state_cov, NUM_LANDMARKS, data["sensor"][i], all_seen_features)
+        state, state_cov = correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmarks, landmark_history)
 
         # Plot robot state
-        plot_state(state, state_cov, landmarks, t, all_seen_features, data["sensor"][i])
+        plot_state(state, state_cov, t, landmarks, landmark_history, observed_landmarks)
 
     print("EKF-SLAM finished!")
 

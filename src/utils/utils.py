@@ -108,7 +108,7 @@ def xy2polar(xy_coords):
 
     return polar_coords
 
-def normalize_angle(angle):
+def normalize_angle(phi):
     """
     Normalize an angle to the range [-pi, pi].
     
@@ -126,8 +126,20 @@ def normalize_angle(angle):
     float
         Normalized angle in the range [-pi, pi].
     """
-    return np.arctan2(np.sin(angle), np.cos(angle))
-    # return angle % (2 * np.pi)
+    while phi > np.pi:
+        phi -= 2 * np.pi
+    while phi < -np.pi:
+        phi += 2 * np.pi
+    return phi
+
+def normalize_all_bearings(z):
+    """Go over the observations vector and normalize the bearings.
+    The expected format of z is [range, bearing, range, bearing, ...]"""
+    
+    for i in range(1, len(z), 2):
+        z[i] = normalize_angle(z[i])
+
+    return z
 
 def read_world(filename):
     """Read world.dat file."""
@@ -138,7 +150,7 @@ def read_world(filename):
     with open(data_dir, 'r') as file:
         for line in file.readlines():
             landmark_id, x, y = map(float, line.strip().split())
-            data['ids'].append(landmark_id-1)
+            data['ids'].append(int(landmark_id-1))
             data['xy'].append([x, y])
     
     return data
