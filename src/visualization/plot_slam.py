@@ -288,11 +288,10 @@ def plot_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, observed_
         l = obs[0]
         mX = mu[2*l + 3]
         mY = mu[2*l + 4]
-        plt.plot(mu[0], mX, '--k', linewidth=1) # label=f"Landmark #{l} - observation X"
-        plt.plot(mu[1], mY, '--k', linewidth=1) # label=f"Landmark #{l} - observation Y"
+        plt.plot([mu[0], mX], [mu[1], mY], '--k', linewidth=1) # label=f"Landmark #{l} - observation X"
 
-    # plt.xlim([-2, 12])
-    # plt.ylim([-2, 12])
+    plt.xlim([-5, 12])
+    plt.ylim([-5, 12])
 
     # plt.legend()
 

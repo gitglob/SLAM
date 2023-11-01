@@ -22,7 +22,7 @@ def initializeLandmarkPosition(expected_robot_state, landmark_reading):
 
 def getDelta(expected_state, landmark_id):
     """Returns the difference between expected robot's position and the landmark's expected position."""
-    delta = expected_state[:2] -  expected_state[3 + 2*landmark_id : 3 + 2*landmark_id + 2]
+    delta = expected_state[3 + 2*landmark_id : 3 + 2*landmark_id + 2] - expected_state[:2]
     return delta
 
 def predictObservation(q, delta, state_theta):
@@ -41,7 +41,7 @@ def getFx_landmark(j, NUM_LANDMARKS):
 
     return F
 
-def getHi(q, delta, F):
+def getHi(q, delta, Fx_j):
     """Returns the Jacobian of the expected observation function, for the specific landmark and the current robot's pose."""
     delta_x = delta[0].item()
     delta_y = delta[1].item()
@@ -50,7 +50,7 @@ def getHi(q, delta, F):
                 [delta_y,             -delta_x,            -q, -delta_y,                      delta_x]]
     H_middle = np.array(H_middle).reshape((2, 5))
 
-    H = 1/q * H_middle @ F
+    H = 1/q * H_middle @ Fx_j
 
     return H
 
@@ -59,14 +59,6 @@ def getKalmanGain(expected_state_cov, H, Q):
     K = expected_state_cov @ H.T @ np.linalg.inv(H @ expected_state_cov @ H.T + Q)
 
     return K
-
-def updateStateCovPred(K, H, expected_state_cov, NUM_LANDMARKS):
-    """Updates the state uncertainty using the Kalman Gain and the Jacobian of the function that computes the expected observation."""
-    I = np.eye(NUM_LANDMARKS*2+3, NUM_LANDMARKS*2+3)
-
-    expected_state_cov = (I - K @ H) @ expected_state_cov
-
-    return expected_state_cov
 
 def updateExpectedPred(expected_state, K, z, z_pred):
     """Updates the state prediction using the previous state prediction, the Kalman Gain and the real and expected observation of a specific landmark."""
@@ -80,6 +72,13 @@ def updateExpectedPred(expected_state, K, z, z_pred):
 
     return expected_state
 
+def updateStateCovPred(K, H, expected_state_cov, NUM_LANDMARKS):
+    """Updates the state uncertainty using the Kalman Gain and the Jacobian of the function that computes the expected observation."""
+    I = np.eye(NUM_LANDMARKS*2+3, NUM_LANDMARKS*2+3)
+
+    expected_state_cov = (I - K @ H) @ expected_state_cov
+
+    return expected_state_cov
 
 # Step B: Correction
 def correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmarks, landmark_history):
@@ -104,7 +103,7 @@ def correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmark
         z = np.vstack(feature[1:3])
 
         # Step 10b: Append landmark observed position to the array of total landmark observations
-        zs[2*i:2*i + 2] = z
+        zs[2*i : 2*(i+1)] = z
 
         # Step 10: Check for new observations
         if j not in landmark_history:
@@ -125,7 +124,7 @@ def correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmark
         expected_z = predictObservation(q, delta, expected_state[2])
 
         # Step 15b: Append the expected observation of the current landmark to the total observation array
-        expected_zs[2*i:2*i + 2] = expected_z
+        expected_zs[2*i : 2*(i+1)] = expected_z
 
         # Step 16
         Fx_j = getFx_landmark(j, NUM_LANDMARKS)
@@ -134,7 +133,7 @@ def correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmark
         Hi = getHi(q, delta, Fx_j)
 
         # Step 17b: Append the jacobian of the current landmark to the total jacobian matrix
-        H[2*i:2*i + 2, :] = Hi
+        H[2*i : 2*(i+1), :] = Hi
 
     # Step 18: endfor
 
@@ -148,4 +147,4 @@ def correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmark
     expected_state_cov = updateStateCovPred(K, H, expected_state_cov, NUM_LANDMARKS)
 
     # Step 22: Return the new state and state covariance estimation
-    return expected_state, expected_state_cov
+    return expected_state, expected_state_cov, landmark_history

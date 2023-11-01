@@ -45,9 +45,6 @@ def main():
     for i, t in enumerate(data["timesteps"]):
         if i%100 == 0:
             print(f"Iteration: {i}, time: {t}")
-
-        if i==10:
-            break
             
         # Extract velocity profile from the odometry readings
         dtheta1 = data["odometry"][i][0]
@@ -62,7 +59,7 @@ def main():
         observed_landmarks = data["sensor"][i]
 
         # Steps 6-23: Correction
-        state, state_cov = correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmarks, landmark_history)
+        state, state_cov, landmark_history = correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmarks, landmark_history)
 
         # Plot robot state
         plot_state(state, state_cov, t, landmarks, landmark_history, observed_landmarks)
