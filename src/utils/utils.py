@@ -1,5 +1,4 @@
 # Standard
-import os
 # External
 import numpy as np
 # Local
@@ -141,13 +140,11 @@ def normalize_all_bearings(z):
 
     return z
 
-def read_world(filename):
-    """Read world.dat file."""
-    data_dir = os.path.join('exercises', '06_ekf_slam_framework', 'data', filename)
-    
+def read_world(fpath):
+    """Read world.dat file."""    
     data = {'ids': [], 'xy': []}
     
-    with open(data_dir, 'r') as file:
+    with open(fpath, 'r') as file:
         for line in file.readlines():
             landmark_id, x, y = map(float, line.strip().split())
             data['ids'].append(int(landmark_id-1))
@@ -155,16 +152,14 @@ def read_world(filename):
     
     return data
 
-def read_data(filename):
-    """Read sensor_data.dat file."""
-    data_dir = os.path.join('exercises', '06_ekf_slam_framework', 'data', filename)
-    
+def read_data(fpath):
+    """Read sensor_data.dat file."""    
     # Initialize the dictionary with empty lists
     data = {'timesteps': [], 'odometry': [], 'sensor': []}
     
     timestep = 0
 
-    with open(data_dir, 'r') as file:
+    with open(fpath, 'r') as file:
         lines = file.readlines()
         i = 0
         

@@ -1,4 +1,5 @@
 # Standard
+import os
 # External
 import numpy as np
 import matplotlib.patches as mpatches
@@ -230,7 +231,7 @@ def drawrobot(xvec, color, robot_type=2, B=0.4, L=0.6):
     else:
         print("Unsupported robot type")
 
-def plot_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, observed_landmarks):
+def plot_slam_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, observed_landmarks, slam_type):
     """
     Visualizes the state of the EKF SLAM algorithm.
 
@@ -249,7 +250,9 @@ def plot_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, observed_
         List indicating which landmarks have been observed up to the current time step.
     observed_landmarks : list of tuples
         List of observations made at the current time step. Each tuple contains (landmark ID, observation data).
-
+    slam_type: string
+        The name of the SLAM algorithm that uses this function (used for saving the plot figure).
+        
     Notes
     -----
     - The resulting plot displays the following information:
@@ -276,26 +279,31 @@ def plot_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, observed_
     for i in range(len(landmarks["xy"])):
         plt.scatter(landmarks["xy"][i][0], landmarks["xy"][i][1], c='k', marker='+', s=100) # label=f"Landmark #{landmarks['ids'][i]} - G.T."
 
-    for l in all_seen_landmarks:
-        # Draw the curently observed landmarks
-        plt.scatter(mu[2*l + 3], mu[2*l + 4], c='b', marker='o', s=10) # , label=f"Landmark #{l} - state"
+    # for l in all_seen_landmarks:
+    #     # Draw the curently observed landmarks
+    #     plt.scatter(mu[2*l + 3], mu[2*l + 4], c='b', marker='o', s=10) # , label=f"Landmark #{l} - state"
 
-        # Draw a probability ellipse based on the covariance matrix of the observed landmarks
-        drawprobellipse(mu[2*l + 3 : 2*l + 5], state_cov[2*l + 3 : 2*l + 5, 2*l + 3 : 2*l + 5], 0.6, 'b')
+    #     # Draw a probability ellipse based on the covariance matrix of the observed landmarks
+    #     drawprobellipse(mu[2*l + 3 : 2*l + 5], state_cov[2*l + 3 : 2*l + 5, 2*l + 3 : 2*l + 5], 0.6, 'b')
             
-    # Draw the observation that the robot just made
-    for obs in observed_landmarks:
-        l = obs[0]
-        mX = mu[2*l + 3]
-        mY = mu[2*l + 4]
-        plt.plot([mu[0], mX], [mu[1], mY], '--k', linewidth=1) # label=f"Landmark #{l} - observation X"
+    # # Draw the observation that the robot just made
+    # breakpoint()
+    # for obs in observed_landmarks:
+    #     l = obs[0]
+    #     mX = mu[2*l + 3]
+    #     mY = mu[2*l + 4]
+    #     plt.plot([mu[0], mX], [mu[1], mY], '--k', linewidth=1) # label=f"Landmark #{l} - observation X"
 
     plt.xlim([-5, 12])
     plt.ylim([-5, 12])
 
     # plt.legend()
 
-    filename = f'results/slam/ekf_{timestep:03}.png'
+    # Save the plot
+    directory = f'results/slam/{slam_type}'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    filename = f'{directory}/step_{timestep:03}.png'
     plt.savefig(filename)
 
     plt.close()

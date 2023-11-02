@@ -50,7 +50,7 @@ def getG(state, Fx, displacement, NUM_LANDMARKS):
     return G
 
 # Step 5
-def predictCovariance(G, state_covariance, Fx, process_cov):
+def predictStateCov(G, state_cov, Fx, process_cov):
     """Predicts the new covariance matrix."""
 
     # Extract the process noise that corresponds to the robot's pose
@@ -60,14 +60,14 @@ def predictCovariance(G, state_covariance, Fx, process_cov):
     R = Fx.T @ Rx @ Fx
 
     # In the new uncertainty, only the parts that contain the robot's pose will change
-    updated_covariance = G @ state_covariance @ G.T
+    updated_cov = G @ state_cov @ G.T
 
-    expected_covariance = updated_covariance + R
+    expected_cov = updated_cov + R
 
-    return expected_covariance
+    return expected_cov
 
 # Step A: Prediction
-def predict(state, state_covariance, displacement, process_cov, Fx, NUM_LANDMARKS):
+def predict(state, state_cov, displacement, process_cov, Fx, NUM_LANDMARKS):
     """Performs the prediction steps of the EKF SLAM algorithm."""
     # Step 1: Construct Fx matrix (done during initialization)
 
@@ -78,7 +78,7 @@ def predict(state, state_covariance, displacement, process_cov, Fx, NUM_LANDMARK
     G = getG(state, Fx, displacement, NUM_LANDMARKS)
 
     # Step 4: Expected state covariance
-    expected_state_cov = predictCovariance(G, state_covariance, Fx, process_cov)
+    expected_state_cov = predictStateCov(G, state_cov, Fx, process_cov)
 
     # Step 5: Return expected state and covariance
     return expected_state, expected_state_cov
