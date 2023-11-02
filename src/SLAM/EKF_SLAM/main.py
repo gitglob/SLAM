@@ -45,9 +45,6 @@ def main():
     for i, t in enumerate(data["timesteps"]):
         if i%100 == 0:
             print(f"Iteration: {i}, time: {t}")
-
-        if i==50:
-            break
             
         # Extract velocity profile from the odometry readings
         dtheta1 = data["odometry"][i][0]
@@ -70,7 +67,7 @@ def main():
     print("EKF-SLAM finished!")
 
     print(f"Current state vector: {state}")
-    print(f"Current state covariance: {state_cov}")
+    # print(f"Current state covariance: {state_cov}")
 
 if __name__ == "__main__":
     main()

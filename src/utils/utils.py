@@ -162,7 +162,7 @@ def read_data(filename):
     # Initialize the dictionary with empty lists
     data = {'timesteps': [], 'odometry': [], 'sensor': []}
     
-    timestep = 1
+    timestep = 0
 
     with open(data_dir, 'r') as file:
         lines = file.readlines()

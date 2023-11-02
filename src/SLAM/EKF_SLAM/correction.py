@@ -103,7 +103,7 @@ def getFx_landmark(j, NUM_LANDMARKS):
     """
     F = np.zeros((5, 3+2*NUM_LANDMARKS))
     F[:3, :3] = np.eye(3)
-    F[3:5, 3 + 2*j - 2 : 3 + 2*j] = np.eye(2)
+    F[3:5, 3 + 2*j : 3 + 2*j + 2] = np.eye(2)
 
     return F
 
@@ -154,6 +154,7 @@ def getKalmanGain(state_cov, H, Q):
     np.ndarray
         The Kalman Gain matrix.
     """
+
     K = state_cov @ H.T @ np.linalg.inv(H @ state_cov @ H.T + Q)
 
     return K
