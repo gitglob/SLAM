@@ -111,10 +111,10 @@ def correct(expected_state, expected_state_cov, observation, measurement_cov, nu
     # Step 7: State update
     propagated_sigma_points = propagateSigmaPoints(sigma_points)
 
-    # Step 8: Uncertainty Update
+    # Step 8: Observation Prediction
     expected_observation = predictObservation(propagated_sigma_points, lamda, num_dim)
 
-    # Step 9: State Update
+    # Step 9: S
     S = updateUncertainty(propagated_sigma_points, expected_observation, measurement_cov, lamda, num_dim)
 
     # Step 10: Uncertainty Update

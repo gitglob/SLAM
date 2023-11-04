@@ -1,5 +1,6 @@
 # Standard
 import os
+import time
 # External
 import numpy as np
 # Local
@@ -42,9 +43,11 @@ def main():
     Fx = getFx(NUM_LANDMARKS)
     
     # Initialize observed features
-    landmark_history = []
+    map = []
 
     # Iterate over time
+    predict_times = []
+    correct_times = []
     for i, t in enumerate(data["timesteps"]):
         if i%100 == 0:
             print(f"Iteration: {i}, time: {t}")
@@ -56,16 +59,24 @@ def main():
         displacement = np.array([dtheta1, dr, dtheta2]).reshape((3,1))
 
         # Steps 1-5: Prediction
+        start_time = time.time()
         expected_state, expected_state_cov = predict(state, state_cov, displacement, process_cov, Fx, NUM_LANDMARKS)
+        predict_times.append(time.time() - start_time)
 
         # Get the current landmark observations
         observed_landmarks = data["sensor"][i]
 
         # Steps 6-23: Correction
-        state, state_cov, landmark_history = correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmarks, landmark_history)
+        start_time = time.time()
+        state, state_cov, map = correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmarks, map)
+        correct_times.append(time.time() - start_time)
 
         # Plot robot state
-        plot_slam_state(state, state_cov, t, landmarks, landmark_history, observed_landmarks, "EKF")
+        plot_slam_state(state, state_cov, t, landmarks, map, observed_landmarks, "EKF")
+
+    print(f"Avg. prediction time: {sum(predict_times)/len(predict_times):.4f} sec.")
+    print(f"Avg. correction time: {sum(correct_times)/len(correct_times):.4f} sec.")
+    print(f"Avg. step time: {(sum(predict_times) + sum(correct_times))/(len(predict_times) + len(correct_times)):.4f} sec.")
 
     print("EKF-SLAM finished!")
 

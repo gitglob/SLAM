@@ -279,23 +279,29 @@ def plot_slam_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, obse
     for i in range(len(landmarks["xy"])):
         plt.scatter(landmarks["xy"][i][0], landmarks["xy"][i][1], c='k', marker='+', s=100) # label=f"Landmark #{landmarks['ids'][i]} - G.T."
 
-    # for l in all_seen_landmarks:
-    #     # Draw the curently observed landmarks
-    #     plt.scatter(mu[2*l + 3], mu[2*l + 4], c='b', marker='o', s=10) # , label=f"Landmark #{l} - state"
+    if slam_type == "EKF":
+        for l in all_seen_landmarks:
+            # Draw the curently observed landmarks
+            plt.scatter(mu[2*l + 3], mu[2*l + 4], c='b', marker='o', s=10) # , label=f"Landmark #{l} - state"
 
-    #     # Draw a probability ellipse based on the covariance matrix of the observed landmarks
-    #     drawprobellipse(mu[2*l + 3 : 2*l + 5], state_cov[2*l + 3 : 2*l + 5, 2*l + 3 : 2*l + 5], 0.6, 'b')
-            
-    # # Draw the observation that the robot just made
-    # breakpoint()
-    # for obs in observed_landmarks:
-    #     l = obs[0]
-    #     mX = mu[2*l + 3]
-    #     mY = mu[2*l + 4]
-    #     plt.plot([mu[0], mX], [mu[1], mY], '--k', linewidth=1) # label=f"Landmark #{l} - observation X"
+            # Draw a probability ellipse based on the covariance matrix of the observed landmarks
+            drawprobellipse(mu[2*l + 3 : 2*l + 5], state_cov[2*l + 3 : 2*l + 5, 2*l + 3 : 2*l + 5], 0.6, 'b')
 
-    plt.xlim([-5, 12])
-    plt.ylim([-5, 12])
+        # Draw the observation that the robot just made
+        for obs in observed_landmarks:
+            l = obs[0]
+            mX = mu[2*l + 3]
+            mY = mu[2*l + 4]
+            plt.plot([mu[0], mX], [mu[1], mY], '--k', linewidth=1) # label=f"Landmark #{l} - observation X"
+    elif slam_type == "UKF":
+        for l_idx in range(len(all_seen_landmarks)):
+            plt.scatter(mu[2*l_idx + 3], mu[2*l_idx + 4], c='b', marker='o', s=10)
+            drawprobellipse(mu[2*l_idx + 3 : 2*l_idx + 5], state_cov[2*l_idx + 3 : 2*l_idx + 5, 2*l_idx + 3 : 2*l_idx + 5], 0.6, 'b')
+        for l_idx in range(len(observed_landmarks)):
+            plt.plot([mu[0], mu[2*l_idx + 3]], [mu[1], mu[2*l_idx + 4]], '--k', linewidth=1)
+
+    plt.xlim(-2, 12)
+    plt.ylim(-2, 12)
 
     # plt.legend()
 

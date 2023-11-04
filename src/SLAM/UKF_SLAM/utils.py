@@ -3,7 +3,6 @@ from scipy.linalg import sqrtm
 # External
 import numpy as np
 # Local
-from . import alpha, beta
 
 def getSigmaPoints(state, state_cov, gamma):
     """
@@ -13,10 +12,10 @@ def getSigmaPoints(state, state_cov, gamma):
     ----------
     state : np.ndarray
         Current state estimate of the system.
-    lamda : float
-        Scaling parameter for the sigma points.
     state_cov : np.ndarray
         Current state covariance matrix.
+    gamma : float
+        Scaling parameter for the sigma points.
 
     Returns
     -------
@@ -24,10 +23,7 @@ def getSigmaPoints(state, state_cov, gamma):
         Generated sigma points based on the given parameters.
     """
     # Get the state dimensions
-    num_dim = state.shape[0]
-
-    # Combine the UKF sigma point scale parameters
-    lamda = gamma - num_dim
+    num_dim = len(state)
 
     # square root of the covariance matrix
     sqrt_matrix = sqrtm(gamma * state_cov)
@@ -42,7 +38,7 @@ def getSigmaPoints(state, state_cov, gamma):
 
     return sigma_points
 
-def getWeight(lamda, num_dim, i, alpha=alpha, beta=beta):
+def getWeight(lamda, gamma, i):
     """
     Calculates the weight for the sigma point with the given index i.
     
@@ -50,50 +46,18 @@ def getWeight(lamda, num_dim, i, alpha=alpha, beta=beta):
     ----------
     lamda : float
         Scaling parameter for the sigma points.
-    num_dim : int
-        Dimension of the state vector.
+    gamma : int
+        Scaling parameter for the sigma points.
     i : int
         Index of the sigma point for which the weight needs to be computed.
-    alpha : float
-        Scaling parameter for the UKF.
-    beta : float
-        Scaling parameter representing the knowledge about the Gaussian distribution.
-
-    Returns
-    -------
-    float, float
-        Weights for computing the mean and variance, respectively.
-    """
-    w_m_0 = lamda / (num_dim + lamda)
-    w_c_0 = w_m_0 + (1 - alpha**2 + beta)
-    
-    if i == 0:
-        return w_m_0, w_c_0
-    else:
-        w_m = 1 / (2 * (num_dim + lamda))
-        w_c = w_m
-
-        return w_m, w_c
-
-def getLamda(alpha, kappa, num_dim):
-    """
-    Calculates the lambda parameter for the UKF based on state dimensionality, 
-    and the alpha and kappa scaling parameters.
-    
-    Parameters
-    ----------
-    alpha : float
-        Scaling parameter for the UKF.
-    kappa : float
-        Secondary scaling parameter for the UKF.
-    num_dim : int
-        Dimension of the state vector.
 
     Returns
     -------
     float
-        Calculated lambda parameter.
+        Weight for computing the mean and variance.
     """
-    lamda = alpha**2 * (num_dim + kappa) - num_dim
-
-    return lamda
+    
+    if i == 0:
+        return lamda / gamma
+    else:
+        return 1 / (2 * gamma)

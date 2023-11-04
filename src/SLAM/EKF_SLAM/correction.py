@@ -215,7 +215,7 @@ def updateExpectedStateCovPred(K, H, state_cov, NUM_LANDMARKS):
     return state_cov
 
 # Step B: Correction
-def correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmarks, landmark_history):
+def correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmarks, map):
     """Performs the correction steps of the EKF SLAM algorithm."""
     # Step 6: Get the number of observations
     num_observed_landmarks = len(observed_landmarks)
@@ -240,11 +240,11 @@ def correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmark
         zs[2*i : 2*(i+1)] = z
 
         # Step 10: Check for new observations
-        if j not in landmark_history:
+        if j not in map:
             print(f"New landmark: {j}")
             # Step 11: Initialize landmark predictions if they are first-seen now
             expected_state[3 + 2*j : 3 + 2*j + 2] = initLandmarkPosition(expected_state, z)
-            landmark_history.append(j)
+            map.append(j)
         
             # Step 12: endif
 
@@ -281,4 +281,4 @@ def correct(expected_state, expected_state_cov, NUM_LANDMARKS, observed_landmark
     expected_state_cov = updateExpectedStateCovPred(K, H, expected_state_cov, NUM_LANDMARKS)
 
     # Step 22: Return the new state and state covariance estimation
-    return expected_state, expected_state_cov, landmark_history
+    return expected_state, expected_state_cov, map
