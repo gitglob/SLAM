@@ -109,27 +109,33 @@ def xy2polar(xy_coords):
 
 def normalize_angle(phi):
     """
-    Normalize an angle to the range [-pi, pi].
+    Normalize an angle or an array of angles to the range [-pi, pi].
     
-    This function takes an angle (in radians) and normalizes it to ensure it lies
+    This function takes an angle (in radians) or an array of angles and normalizes it to ensure it lies
     between -pi and pi. This is useful when working with angular measurements and 
     differences to avoid discontinuities due to angle wrapping.
 
     Parameters
     ----------
-    angle : float
-        Angle (in radians) to be normalized.
+    phi : float or numpy.ndarray
+        Angle (in radians) or an array of angles to be normalized.
     
     Returns
     -------
-    float
-        Normalized angle in the range [-pi, pi].
+    float or numpy.ndarray
+        Normalized angle or array of angles in the range [-pi, pi].
     """
-    while phi > np.pi:
-        phi -= 2 * np.pi
-    while phi < -np.pi:
-        phi += 2 * np.pi
-    return phi
+    # If phi is a scalar, we normalize it directly
+    if np.isscalar(phi) or len(phi)==1:
+        while phi > np.pi:
+            phi -= 2 * np.pi
+        while phi < -np.pi:
+            phi += 2 * np.pi
+        return phi
+    else:
+        # If phi is an array, we apply the normalization element-wise
+        normalized_phi = np.vectorize(normalize_angle)(phi)
+        return normalized_phi
 
 def normalize_all_bearings(z):
     """Go over the observations vector and normalize the bearings.

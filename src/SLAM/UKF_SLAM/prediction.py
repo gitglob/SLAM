@@ -38,13 +38,13 @@ def propagateSigmaPoints(sigma_points, displacement):
     return sigma_points
 
 # Step 4
-def predictState(propagated_sigma_points, lamda, gamma, num_dim):
+def predictState(sigma_points, lamda, gamma, num_dim):
     """
-    Computes the weighted mean of the propagated sigma points to predict the state.
+    Computes the weighted mean of the sigma points to predict the state.
     
     Parameters
     ----------
-    propagated_sigma_points : np.ndarray
+    sigma_points : np.ndarray
         Sigma points after being passed through the motion model.
     lamda : float
         Scaling parameter for the sigma points and weights.
@@ -59,24 +59,24 @@ def predictState(propagated_sigma_points, lamda, gamma, num_dim):
     expected_state = np.zeros((num_dim, 1))
     expected_x = 0
     expected_y = 0
-    for i in range(len(propagated_sigma_points)):
+    for i in range(len(sigma_points)):
         w_m = getWeight(lamda, gamma, i)
-        expected_state += w_m * propagated_sigma_points[i]
-        expected_x += + w_m * np.cos(propagated_sigma_points[i,2])
-        expected_y += + w_m * np.sin(propagated_sigma_points[i,2])
+        expected_state += w_m * sigma_points[i]
+        expected_x += w_m * np.cos(sigma_points[i,2])
+        expected_y += w_m * np.sin(sigma_points[i,2])
 
     expected_state[2] = normalize_angle(np.arctan2(expected_y, expected_x))
 
     return expected_state
 
 # Step 5
-def predictStateCov(propagated_sigma_points, expected_state, process_cov, lamda, gamma, num_dim):
+def predictStateCov(sigma_points, expected_state, process_cov, lamda, gamma, num_dim):
     """
-    Computes the state covariance based on the propagated sigma points.
+    Computes the state covariance based on the sigma points.
     
     Parameters
     ----------
-    propagated_sigma_points : np.ndarray
+    sigma_points : np.ndarray
         Sigma points after being passed through the motion model.
     expected_state : np.ndarray
         Predicted mean state of the system.
@@ -98,11 +98,12 @@ def predictStateCov(propagated_sigma_points, expected_state, process_cov, lamda,
 
     # Calculate the expected state covariance for robot + landmarks
     expected_state_cov = np.zeros((num_dim, num_dim))
-    for i in range(len(propagated_sigma_points)):
+    for i in range(len(sigma_points)):
+        sigma_points_diff = sigma_points[i] - expected_state
+        sigma_points_diff[2] = normalize_angle(sigma_points_diff[2]) # MAYBE HERE
+
         w_c = getWeight(lamda, gamma, i)
-        sigma_points_diff = propagated_sigma_points[i] - expected_state
-        sigma_points_diff[2] = normalize_angle(sigma_points_diff[2])
-        expected_state_cov += w_c * sigma_points_diff @ sigma_points_diff.T
+        expected_state_cov += w_c * (sigma_points_diff @ sigma_points_diff.T)
 
     # Add the motion noise to the state covariance
     expected_state_cov += motion_noise

@@ -80,7 +80,7 @@ def main():
 
     print("EKF-SLAM finished!")
 
-    print(f"Current state vector: {state}")
+    print(f"Current state vector: \n{state}")
     # print(f"Current state covariance: {state_cov}")
 
 if __name__ == "__main__":

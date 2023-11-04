@@ -45,7 +45,6 @@ def drawellipse(x, a, b, color):
 
     # Plot
     plt.plot(p[0, :], p[1, :], color=color, linewidth=2)
-    plt.axis('equal')  # to make sure the ellipse looks correct
 
 def drawprobellipse(x, C, alpha, color):
     """
@@ -300,9 +299,8 @@ def plot_slam_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, obse
         for l_idx in range(len(observed_landmarks)):
             plt.plot([mu[0], mu[2*l_idx + 3]], [mu[1], mu[2*l_idx + 4]], '--k', linewidth=1)
 
-    plt.xlim(-2, 12)
-    plt.ylim(-2, 12)
-
+    plt.xlim([-2, 12])
+    plt.ylim([-2, 12])
     # plt.legend()
 
     # Save the plot

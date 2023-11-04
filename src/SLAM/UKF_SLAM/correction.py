@@ -11,14 +11,20 @@ def initLandmarkPosition(state, state_cov, z, Q, gamma):
     Initializes a landmark based on its first observation.
     
     Parameters:
-    state (np.ndarray): The mean state vector.
-    state_cov (np.ndarray): The state covariance matrix.
-    z (dict): The observation containing 'range', 'bearing', and 'id'.
-    Q (np.ndarray): The sensor noise covariance matrix.
-    gamma (float): The scaling factor for computing state_cov points.
+    state : np.ndarray
+        The mean state vector.
+    state_cov :  np.ndarray)
+        The state covariance matrix.
+    z :  dict
+        The observation containing 'range', 'bearing', and 'id'.
+    Q : np.ndarray
+        The sensor noise covariance matrix.
+    gamma : float
+        The scaling factor for computing state_cov points.
     
     Returns:
-    tuple: Tuple containing the updated mean vector, covariance matrix, and map of landmarks.
+    tuple
+        Tuple containing the updated mean vector, covariance matrix, and map of landmarks.
     """
     
     # Append the landmark measurement to the state vector
@@ -34,8 +40,7 @@ def initLandmarkPosition(state, state_cov, z, Q, gamma):
     # Compute sigma points
     sigma_points = getSigmaPoints(state, state_cov, gamma)
     # Normalize angles in sigma points
-    for i in range(len(sigma_points)):
-        sigma_points[i,2,0] = normalize_angle(sigma_points[i, 2, 0])
+    sigma_points[:,2] = normalize_angle(sigma_points[:, 2])
     
     # For each sigma point, compute the x/y location of the new landmark, based on the robot's location
     newX = np.zeros((len(sigma_points),1))
@@ -70,10 +75,11 @@ def initLandmarkPosition(state, state_cov, z, Q, gamma):
     # Recover the updated state covariance
     state_cov = np.zeros((num_dim, num_dim))
     for i in range(len(sigma_points)):
-        w_c = getWeight(lamda, gamma, i)
         sigma_points_diff = sigma_points[i] - state
         sigma_points_diff[2] = normalize_angle(sigma_points_diff[2])
-        state_cov += w_c * sigma_points_diff @ sigma_points_diff.T
+
+        w_c = getWeight(lamda, gamma, i)
+        state_cov += w_c * (sigma_points_diff @ sigma_points_diff.T)
 
     return state, state_cov
 
@@ -99,13 +105,16 @@ def predictObservation(sigma_points, l_idx):
     propagated_sigma_points = np.zeros((sigma_points.shape[0], 2, 1))
 
     # Get the the sigma points for the specific landmark
-    landmarkXs = sigma_points[:, 2*l_idx + 2]
-    landmarkYs = sigma_points[:, 2*l_idx + 3]
+    landmarkXs = sigma_points[:, 2*l_idx + 3]
+    landmarkYs = sigma_points[:, 2*l_idx + 4]
 
     for i in range(len(propagated_sigma_points)):
+        dx = landmarkXs[i] - sigma_points[i, 0]
+        dy = landmarkYs[i] - sigma_points[i, 1]
+
         # Get range and bearing by computing the differences between the landmark positions and robot position
-        r = np.sqrt((landmarkXs[i] - sigma_points[i, 0])**2 + (landmarkYs[i] - sigma_points[i, 1])**2)
-        bearing = np.arctan2(landmarkYs[i] - sigma_points[i, 1], landmarkXs[i] - sigma_points[i, 0]) - sigma_points[i, 2]
+        r = np.sqrt(dx**2 + dy**2)
+        bearing = np.arctan2(dy, dx) - sigma_points[i, 2]
         bearing = normalize_angle(bearing)
 
         propagated_sigma_points[i] = np.vstack([r, bearing])
@@ -113,14 +122,14 @@ def predictObservation(sigma_points, l_idx):
     return propagated_sigma_points
 
 # Step 8
-def recoverObservation(propagated_sigma_points, lamda, gamma):
+def recoverObservation(sigma_points, lamda, gamma):
     """
     Recover the weighted mean of the propagated sigma points to
     calculate the mean expected observation.
     
     Parameters
     ----------
-    propagated_sigma_points : np.ndarray
+    sigma_points : np.ndarray
         Sigma points after being passed through the motion model.
     lamda : float
         Scaling parameter for the sigma points and weights.
@@ -136,32 +145,34 @@ def recoverObservation(propagated_sigma_points, lamda, gamma):
     expected_observation = np.zeros((2,1))
     expected_x = 0
     expected_y = 0
-    for i in range(len(propagated_sigma_points)):
+    for i in range(len(sigma_points)):
         w_m = getWeight(lamda, gamma, i)
-        expected_observation += w_m * propagated_sigma_points[i]
-        expected_x += w_m * np.cos(propagated_sigma_points[i,1])
-        expected_y += w_m * np.sin(propagated_sigma_points[i,1])
+        expected_observation += w_m * sigma_points[i]
+
+        expected_x += w_m * np.cos(sigma_points[i,1])
+        expected_y += w_m * np.sin(sigma_points[i,1])
 
     expected_observation[1] = normalize_angle(np.arctan2(expected_y, expected_x))
 
     return expected_observation
 
 # Step 9
-def updateUncertainty(propagated_sigma_points, expected_observation, measurement_cov, lamda, gamma, num_dim):
+def updateUncertainty(sigma_points, expected_observation, measurement_cov, lamda, gamma):
     """Calculates S."""
     S = np.zeros(measurement_cov.shape)
-    for i in range(len(propagated_sigma_points)):
-        w_c = getWeight(lamda, gamma, i)
-        diff = propagated_sigma_points[i] - expected_observation
+    for i in range(len(sigma_points)):
+        diff = sigma_points[i] - expected_observation
         diff[1] = normalize_angle(diff[1])
-        S += w_c * diff @ diff.T + measurement_cov
+
+        w_c = getWeight(lamda, gamma, i)
+        S += w_c * (diff @ diff.T) + measurement_cov
 
     return S
 
 # Step 10
-def predictStateCov(sigma_points, expected_state, propagated_sigma_points, expected_observation, lamda, gamma, num_dim):
+def predictStateCov(sigma_points, expected_state, propagated_sigma_points, expected_observation, lamda, gamma):
     """Calculates the expected state uncertainty."""
-    expected_state_cov = np.zeros((num_dim, 2))
+    expected_state_cov = np.zeros((sigma_points.shape[1], 2))
     for i in range(len(sigma_points)):
         w_c = getWeight(lamda, gamma, i)
 
@@ -171,7 +182,7 @@ def predictStateCov(sigma_points, expected_state, propagated_sigma_points, expec
         diff_observation = propagated_sigma_points[i] - expected_observation
         diff_observation[1] = normalize_angle(diff_observation[1])
         
-        expected_state_cov += w_c * diff_state @ diff_observation.T
+        expected_state_cov += w_c * (diff_state @ diff_observation.T)
 
     return expected_state_cov
 
@@ -190,7 +201,7 @@ def updateState(expected_state, K, observation, expected_observation):
     innovation[1] = normalize_angle(innovation[1])
 
     # Update state
-    state = expected_state + K @ innovation
+    state = expected_state + (K @ innovation)
     state[2] = normalize_angle(state[2])
 
     return state
@@ -198,7 +209,7 @@ def updateState(expected_state, K, observation, expected_observation):
 # step 13
 def updateStateCov(expected_state_cov, K, S):
     """Updates the state covariance matrrix."""
-    state_cov = expected_state_cov - K @ S @ K.T
+    state_cov = expected_state_cov - (K @ S @ K.T)
 
     return state_cov
 
@@ -224,8 +235,7 @@ def correct(expected_state, expected_state_cov, measurement_cov, observed_landma
 
         # Step 11: Compute sigma points
         sigma_points = getSigmaPoints(expected_state, expected_state_cov, gamma)
-        for k in range(len(sigma_points)):
-            sigma_points[k,2,0] = normalize_angle(sigma_points[k,2,0]) # Normalize angle
+        sigma_points[:,2] = normalize_angle(sigma_points[:,2]) # Normalize angle
 
         # Step 12: Update dimension size and lamda
         num_dim = len(expected_state)
@@ -239,10 +249,10 @@ def correct(expected_state, expected_state_cov, measurement_cov, observed_landma
         expected_observation = recoverObservation(propagated_sigma_points, lamda, gamma)
 
         # Step 15: S
-        S = updateUncertainty(propagated_sigma_points, expected_observation, measurement_cov, lamda, gamma, num_dim)
+        S = updateUncertainty(propagated_sigma_points, expected_observation, measurement_cov, lamda, gamma)
 
         # Step 16: Uncertainty Update
-        expected_cross_cov = predictStateCov(sigma_points, expected_state, propagated_sigma_points, expected_observation, lamda, gamma, num_dim)
+        expected_cross_cov = predictStateCov(sigma_points, expected_state, propagated_sigma_points, expected_observation, lamda, gamma)
 
         # Step 17: Kalman Fain
         K = getKalmanGain(expected_cross_cov, S)
