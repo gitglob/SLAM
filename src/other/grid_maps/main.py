@@ -6,9 +6,11 @@ from .utils import prob_to_log_odds, inv_sensor_model
 from .visualize import plot_map
 from .data import load_octave_cell_array
 
+
 def main():
     # Load laser scans and robot poses.
     laser = load_octave_cell_array("exercises/12_gridmaps_framework/data/laser_copy")
+    poses = laser["pose"]
 
     # Initial cell occupancy probability.
     prior = 0.50
@@ -31,7 +33,7 @@ def main():
     mapSizeMeters = [mapBox[1] - offsetX, mapBox[3] - offsetY]
     mapSize = np.ceil(np.array(mapSizeMeters) / gridSize).astype(int)
 
-    # Used when updating the map. Assumes that prob_to_log_odds.m has been implemented correctly.
+    # Convert probabilities to log odds
     logOddsPrior = prob_to_log_odds(prior)
 
     # The occupancy value of each cell in the map is initialized with the prior.
@@ -39,26 +41,30 @@ def main():
     print('Map initialized. Map size:'), print(map.shape)
 
     # Map offset used when converting from world to map coordinates.
-    offset = np.array([offsetX, offsetY])
+    offset = np.vstack([offsetX, offsetY])
 
     # Main loop for updating map cells.
     for t in range(poses.shape[0]):
-        print(t)
+        if t%100 == 0:
+            print(f"Time: {t}")
+
         # Robot pose at time t.
-        robPose = poses[t, :]
+        robPose = poses[t]
 
         # Laser scan made at time t.
-        sc = laser[1, t]
+        scan = {}
+        for key in laser.keys():
+            scan[key] = laser[key][t]
+
         # Compute the mapUpdate, which contains the log odds values to add to the map.
-        mapUpdate, robPoseMapFrame, laserEndPntsMapFrame = inv_sensor_model(map, sc, robPose, gridSize, offset, probOcc, probFree)
+        mapUpdate, robPoseMapFrame, laserEndPntsMapFrame = inv_sensor_model(map, scan, robPose, gridSize, offset, probOcc, probFree)
 
         mapUpdate -= logOddsPrior * np.ones_like(map)
         # Update the occupancy values of the affected cells.
         map += mapUpdate
 
         # Plot current map and robot trajectory so far.
-        # TODO: implement the plot_map function or use an appropriate library function
-        plot_map(map, mapBox, robPoseMapFrame, poses, laserEndPntsMapFrame, gridSize, offset, t)
+        plot_map(map, robPoseMapFrame, poses, laserEndPntsMapFrame, gridSize, offset, t)
 
 if __name__ == "__main__":
     main()

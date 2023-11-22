@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # Local
 from .utils import log_odds_to_prob, world_to_map_coordinates
 
-def plot_map(map, mapBox, robPoseMapFrame, poses, laserEndPntsMapFrame, gridSize, offset, t):
+def plot_map(map, robPoseMapFrame, poses, laserEndPntsMapFrame, gridSize, offset, t):
     """
     Visualize the robot's occupancy grid map, trajectory, pose, and laser scan endpoints.
 
@@ -29,15 +29,19 @@ def plot_map(map, mapBox, robPoseMapFrame, poses, laserEndPntsMapFrame, gridSize
     t : int
         The current time step or iteration number.
     """
+    poses = np.squeeze(poses, -1)
+
     plt.close('all')
     fig, ax = plt.subplots(figsize=(10, 10), dpi=100)
-    ax.axis(mapBox)
     ax.imshow(1 - log_odds_to_prob(np.transpose(map)), cmap='gray')
 
-    traj = world_to_map_coordinates(np.array([poses[:t, 0], poses[:t, 1]]), gridSize, offset)
-    ax.plot(traj[0, :], traj[1, :], 'g')
+    traj_poses = np.column_stack((poses[:t+1, 0], poses[:t+1, 1]))
+    traj_poses = np.expand_dims(traj_poses, axis=-1)
+    traj = world_to_map_coordinates(traj_poses, gridSize, offset)
+    
+    ax.plot(traj[:, 0], traj[:, 1], 'g')
     ax.plot(robPoseMapFrame[0], robPoseMapFrame[1], 'bo', markersize=5, linewidth=4)
-    ax.plot(laserEndPntsMapFrame[0, :], laserEndPntsMapFrame[1, :], 'ro', markersize=2)
+    ax.plot(laserEndPntsMapFrame[:, 0], laserEndPntsMapFrame[:, 1], 'ro', markersize=2)
     
     directory = f"results/other/gridmaps"
     if not os.path.exists(directory):
