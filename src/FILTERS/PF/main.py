@@ -34,6 +34,8 @@ def motion():
         # Generate visualization plots of the current state of the filter
         plot_state(particles, t+1)
 
+    print("Particle Filter finished!")
+
 def resampling():
     # Initialize the particles
     num_particles = 1000
@@ -51,6 +53,8 @@ def resampling():
 
     # Plot the particles before and after resampling
     plot_resampling(particles, resampled_particles)
+
+    print("Resampling finished!")
     
 
 def main():
