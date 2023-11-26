@@ -4,7 +4,7 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 # Local
-from src.visualization.plot_slam_state import draw_probellipse, draw_robot
+from src.visualization.plot_slam_state import drawprobellipse, drawrobot
 
 
 def plot_state(particles, landmarks, timestep, z):
@@ -31,8 +31,8 @@ def plot_state(particles, landmarks, timestep, z):
     plt.grid(True)  # Add a grid to the plot.
     
     # Plot ground truth landmarks as black '+'
-    for lm in landmarks:
-        plt.plot(lm['x'], lm['y'], 'k+', markersize=10, linewidth=5)
+    for lm in landmarks["xy"]:
+        plt.plot(lm[0], lm[1], 'k+', markersize=10, linewidth=5)
     
     # Plot particles in green
     ppos = np.array([p.pose for p in particles])
@@ -46,25 +46,26 @@ def plot_state(particles, landmarks, timestep, z):
     for lm in best_particle.landmarks:
         if lm.observed:
             plt.plot(lm.mu[0], lm.mu[1], 'bo', markersize=3)
-            draw_probellipse(lm.mu, lm.sigma, 0.95, 'b')
+            drawprobellipse(lm.mu, lm.sigma, 0.95, 'b')
     
     # Draw observations as lines between robot and landmarks
     for obs in z:
-        lm = best_particle.landmarks[obs.id].mu
+        lm = best_particle.landmarks[obs[0]].mu
         plt.plot([best_particle.pose[0], lm[0]], [best_particle.pose[1], lm[1]], 'k-', linewidth=1)
     
     # Draw the trajectory of the best particle in red
     trajectory = np.array(best_particle.history)
-    plt.plot(trajectory[:, 0], trajectory[:, 1], 'r-', linewidth=3)
+    plt.plot(trajectory[:, 0], trajectory[:, 1], 'r-', linewidth=2)
     
     # Draw the robot at the pose of the best particle
-    draw_robot(best_particle.pose, 'r', 3, 0.3, 0.3)
+    drawrobot(best_particle.pose, 'r', 3, 0.3, 0.3)
 
     # Save the plot
-    directory = f'results/slam/fast-slam'
+    directory = f'results/slam/FAST'
     if not os.path.exists(directory):
         os.makedirs(directory)
     filename = f'{directory}/step_{timestep:03}.png'
     plt.savefig(filename)
 
     plt.close()
+    

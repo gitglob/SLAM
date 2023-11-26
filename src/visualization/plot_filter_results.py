@@ -52,9 +52,11 @@ def plot_filter_trajectories(robot_states, prediction_states, correction_states,
     if not os.path.exists("results"):
         os.makedirs("results")
     
-    # Save the plot to the specified destination within 'results'
-    save_path = os.path.join("results")
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-    plt.savefig(os.path.join(save_path, f"{filter_name}-trajectory.png"), dpi=600)
+    # Save the plot
+    directory = f'results/filters/{filter_name}'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    filename = f'{directory}/trajectory.png'
+    plt.savefig(filename)
+
     plt.close()

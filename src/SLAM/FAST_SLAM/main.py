@@ -19,9 +19,13 @@ def main():
     data = read_data(sensor_path)
 
     # Get the number of landmarks in the map
-    num_landmarks = landmarks.shape[1]
+    num_landmarks = len(landmarks["ids"])
 
-    noise = np.vstack([0.005, 0.01, 0.005])
+    # Initialize the noise of the motion model
+    motion_noise = np.vstack([0.005, 0.01, 0.005])
+
+    # Initialize the sensor noise
+    sensor_noise = np.eye(2) * 0.1
 
     # Number of particles
     num_particles = 100
@@ -29,28 +33,25 @@ def main():
     # Initialize the particles array
     particles = [Particle(num_landmarks, num_particles) for _ in range(num_particles)]
 
-    # Toggle the visualization type
-    show_gui = False
-
     # Main loop
     predict_times = []
     correct_times = []
-    for t in range(data['timestep'].shape[1]):
+    for t in data["timesteps"]:
         if t%100 == 0:
             print(f"Time: {t}")
 
         # Prediction step
         start_time = time.time()
-        particles = predict(particles, data['timestep'][t]['odometry'], noise)
+        particles = predict(particles, data['odometry'][t], motion_noise)
         predict_times.append(time.time() - start_time)
 
         # Correction step
         start_time = time.time()
-        particles = correct(particles, data['timestep'][t]['sensor'])
+        particles = correct(particles, data['sensor'][t], sensor_noise)
         correct_times.append(time.time() - start_time)
 
         # Visualization
-        plot_state(particles, landmarks, t, data['timestep'][t]['sensor'], show_gui)
+        plot_state(particles, landmarks, t, data['sensor'][t])
 
         # Resample
         particles = resample(particles)
@@ -69,3 +70,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
