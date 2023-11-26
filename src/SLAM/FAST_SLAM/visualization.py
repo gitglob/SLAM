@@ -60,6 +60,9 @@ def plot_state(particles, landmarks, timestep, z):
     # Draw the robot at the pose of the best particle
     drawrobot(best_particle.pose, 'r', 3, 0.3, 0.3)
 
+    plt.xlim([-2, 12])
+    plt.ylim([-2, 12])
+    
     # Save the plot
     directory = f'results/slam/FAST'
     if not os.path.exists(directory):
@@ -68,4 +71,3 @@ def plot_state(particles, landmarks, timestep, z):
     plt.savefig(filename)
 
     plt.close()
-    
