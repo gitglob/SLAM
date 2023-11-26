@@ -24,12 +24,14 @@ class Particle2D:
 def low_variance_resampling(particles, weights, num_particles):
     new_particles = []
     c = weights[0]
+
+    # current position on the roulette wheel
     r = np.random.uniform(0, 1 / num_particles)
 
     # Walk along the wheel to select the particles
     i = 0
     for j in range(num_particles):
-        U = r + (j-1) / num_particles
+        U = r + j / num_particles
         while U > c:
             i += 1
             c += weights[i]
