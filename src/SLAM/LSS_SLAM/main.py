@@ -4,6 +4,7 @@ import time
 # External
 import numpy as np
 from scipy.io import loadmat
+import pandas as pd
 # Local
 from .data import load_data
 from .functions import compute_global_error, linearize_and_solve
@@ -16,13 +17,17 @@ def main():
     # Load the graph
     dataset = "simulation-pose-landmark"
     datapath = "exercises/16_lsslam_framework/data/" + dataset + ".dat"
-    data = loadmat(datapath)
-    g = data['g']
+    x, edges, idLookup = load_data(datapath)
+    data = {
+        "x": x,
+        "edges": edges,
+        "idLookup": idLookup        
+    }
 
     # Plot the initial state of the graph
-    plot_graph(g, 0, dataset)
+    plot_graph(data, 0, dataset)
 
-    print(f'Initial error {compute_global_error(g)}')
+    print(f'Initial error {compute_global_error(data)}')
 
     # Number of iterations
     num_iterations = 100
@@ -31,18 +36,18 @@ def main():
     EPSILON = 1e-4
 
     # Carry out the iterations
-    for i in range(1, num_iterations + 1):
+    for i in range(num_iterations):
         print(f'Performing iteration {i}')
 
-        dx = linearize_and_solve(g)
+        dx = linearize_and_solve(data)
 
         # Apply the solution to the state vector g.x
-        g['x'] = g['x'] + dx
+        data['x'] = data['x'] + dx
 
         # Plot the current state of the graph
-        plot_graph(g, i, dataset)
+        plot_graph(data, i, dataset)
 
-        err = compute_global_error(g)
+        err = compute_global_error(data)
 
         # Print current error
         print(f'Current error {err}')

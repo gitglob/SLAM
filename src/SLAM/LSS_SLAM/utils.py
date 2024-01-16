@@ -127,14 +127,14 @@ def read_graph(filename):
 
     return graph
 
-def nnz_of_graph(g):
+def nnz_of_graph(data):
     """
     Calculates the number of non-zero elements of a graph. It is an upper bound, 
     as duplicate edges might be counted several times.
 
     Parameters
     ----------
-    g : dict
+    data : dict
         The graph data structure.
 
     Returns
@@ -145,11 +145,11 @@ def nnz_of_graph(g):
     nnz = 0
 
     # Elements along the diagonal
-    for key, value in g['idLookup'].items():
-        nnz += value['dimension'] ** 2
+    for idLookup_dict in data['idLookup']:
+        nnz += idLookup_dict['dimension'] ** 2
 
     # Off-diagonal elements
-    for edge in g['edges']:
+    for edge in data['edges']:
         if edge['type'] == 'P':
             nnz += 2 * 9
         elif edge['type'] == 'L':
@@ -176,13 +176,13 @@ def invt(m):
     A[0:2, 2] = -np.dot(m[0:2, 0:2].T, m[0:2, 2])
     return A
 
-def get_poses_landmarks(g):
+def get_poses_landmarks(data):
     """
     Extracts the offsets of the poses and the landmarks from the graph.
 
     Parameters
     ----------
-    g : dict
+    data : dict
         The graph data structure.
 
     Returns
@@ -195,9 +195,10 @@ def get_poses_landmarks(g):
     poses = []
     landmarks = []
 
-    for key, value in g['idLookup'].items():
-        dim = value['dimension']
-        offset = value['offset']
+    idLookup = data['idLookup']
+    for i in range(len(idLookup)):
+        offset = idLookup[i]['offset']
+        dim = idLookup[i]['dimension']
         if dim == 3:
             poses.append(offset)
         elif dim == 2:

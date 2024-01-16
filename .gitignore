@@ -21,3 +21,6 @@ lectures
 
 # Output
 results/*
+
+# Redirected terminal output
+*.txt
