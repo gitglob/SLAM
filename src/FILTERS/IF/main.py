@@ -24,40 +24,23 @@ def main():
     # - Process noise
     # - Measurement noise
 
-    # Simulation - Spiral Trajectory ground truth
-    x, y, theta, time, v, omega = simulate_spiral_movement()
-    gt_states = np.column_stack((x, y, theta))
-
-    # Simulation - Spiral Trajectory sensor readings
-    (sensor_measurements, sensor_ts) = simulate_sensors(x, y, time)
+    # Fake time
+    time = np.linspace(0, 100, 1000)
 
     # Initialize state
-    state = np.vstack((x[0], y[0], theta[0])) # x, y, θ
+    state = np.zeros((4, 1))
 
     # Initialize state covariance
-    state_cov = np.eye(4) * 1e-12
+    state_cov = np.eye((4)) * 0.01
 
     # Convert from moment to canonical form
     inf_matrix, inf_vector = moment2canonical(state_cov, state)
 
     # Initialize process noise
-    process_cov = np.eye(3)*0.1
+    process_cov = np.eye((4)) * 0.01
 
     # Initialize measurement noise
     measurement_cov = getQ()
-
-    # Keep track of all the states
-    all_states = np.zeros((len(time),3,1))
-    all_states[0] = np.array(state)
-
-    # Keep track of the prediction states
-    prediction_states = np.zeros((len(time),3,1))
-
-    # Keep track of the correction states
-    correction_states = np.zeros((len(sensor_ts),3,1))
-
-    # Correction counters
-    correction_counter = 0
 
     # Iterate over time
     for i, t in enumerate(time):
@@ -66,35 +49,27 @@ def main():
 
         # Calculate dt
         if i == 0:
-            continue
+            dt = 0
         else:
             dt = t - time[i-1]
 
-        # Control input (linear/rotational velocity)
-        u = np.vstack((v[i], omega[i]))
+        # Generate random control input (linear/rotational velocity)
+        v = np.random.random()
+        omega = np.random.random()
+        u = np.array([v, omega]).reshape((2,1))
+
+        # Generate random measurement
+        z = np.random.rand(2,1)
 
         # Steps 2-3: Prediction
         expected_inf_matrix, expected_inf_vector = predict(inf_matrix, inf_vector, u, process_cov, dt)
         state_cov, state = canonical2moment(expected_inf_matrix, expected_inf_vector)
 
-        # Check if a correction is available
-        if i < len(time) - 1 and correction_counter < len(sensor_ts) and sensor_ts[correction_counter] < time[i + 1]:
-            # Get range measurement
-            z = sensor_measurements[correction_counter].reshape((2,1))
-            correction_counter += 1
-
-            # Steps 4-6: Correction
-            inf_matrix, inf_vector = correct(expected_inf_matrix, expected_inf_vector, z, measurement_cov)
-            state_cov, state = canonical2moment(inf_matrix, inf_vector)
-            correction_states[correction_counter-1] = state
-
-    # Plot the results
-    plot_filter_trajectories(all_states, 
-                             prediction_states, correction_states, 
-                             gt_states, "IF")
+        # Steps 4-6: Correction
+        inf_matrix, inf_vector = correct(expected_inf_matrix, expected_inf_vector, z, measurement_cov)
+        state_cov, state = canonical2moment(inf_matrix, inf_vector)
 
     print(f"# of iterations: {i}")
-    print(f"# of corrections: {correction_counter}")
     print("IF finished!")
 
 if __name__ == "__main__":

@@ -19,22 +19,25 @@ def main():
     # - Measurement noise
 
     # Fake time
-    time = np.linspace(0, 1, 11)
+    time = np.linspace(0, 100, 1000)
 
     # Initialize state
     state = np.zeros((4, 1))
 
     # Initialize state covariance
-    state_cov = np.zeros((4, 4))
+    state_cov = np.eye((4)) * 0.01
     
     # Initialize process noise
-    process_cov = np.zeros((4, 4))
+    process_cov = np.eye((4)) * 0.01
 
     # Measurement noise initialization
     measurement_cov = getQ()
 
     # Iterate over time
     for i, t in enumerate(time):
+        if i%100 == 0:
+            print(f"Iteration: {i}, time: {t}")
+
         # Calculate dt
         if i == 0:
             dt = 0
@@ -55,5 +58,8 @@ def main():
         # Steps 4-7: Correction
         state, state_cov = correct(expected_state, expected_state_cov, z, measurement_cov)
 
+    print(f"# of iterations: {i}")
+    print("IF finished!")
+    
 if __name__ == "__main__":
     main()
