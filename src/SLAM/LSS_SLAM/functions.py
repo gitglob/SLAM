@@ -155,7 +155,7 @@ def linearize_and_solve(g):
 
     print('Solving system')
     # Solve the linear system
-    dx = -np.linalg.solve(H.toarray(), -b)
+    dx = np.linalg.solve(H.toarray(), -b)
 
     return dx
 
@@ -231,7 +231,7 @@ def linearize_pose_pose_constraint(x1, x2, z):
     X2 = v2t(x2)
     Z = v2t(z)
 
-    e = t2v(np.linalg.inv(Z) @ (np.linalg.inv(X1) @ X2))
+    e = t2v(np.linalg.inv(Z) @ np.linalg.inv(X1) @ X2)
 
     Rij = Z[0:2, 0:2]
     Ri = X1[0:2, 0:2]
@@ -242,33 +242,42 @@ def linearize_pose_pose_constraint(x1, x2, z):
     xi, yi = x1[0].item(), x1[1].item()
     xj, yj = x2[0].item(), x2[1].item()
 
-    eij_xi = np.array([-np.cos(theta_i)*np.cos(theta_ij) + np.sin(theta_i)*np.sin(theta_ij),
-                       -np.sin(theta_i)*np.cos(theta_ij) - np.cos(theta_i)*np.sin(theta_ij),
-                        0])
-    eij_yi = np.array([np.sin(theta_i)*np.cos(theta_ij) + np.cos(theta_i)*np.sin(theta_ij),
-                       -np.sin(theta_i)*np.sin(theta_ij) + np.cos(theta_i)*np.cos(theta_ij),
-                        0])
-    eij_theta_i = np.array([-(xj - xi)*(np.sin(theta_i)*np.cos(theta_ij) 
-                                        + np.cos(theta_i)*np.sin(theta_ij)) 
-                                        + (yj - yi)*(np.cos(theta_i)*np.cos(theta_ij) 
-                                        - np.sin(theta_i)*np.sin(theta_ij)),
-                             (xj - xi)*(np.sin(theta_i)*np.sin(theta_ij) 
-                                        - np.cos(theta_i)*np.cos(theta_ij)) 
-                                        - (yj - yi)*(np.cos(theta_i)*np.sin(theta_ij) 
-                                        + np.sin(theta_i)*np.cos(theta_ij)),
-                             -1])
+    # Compute eij partial derivative with respect to pose x1
+    eij_xi = [-np.cos(theta_i)*np.cos(theta_ij)+np.sin(theta_i)*np.sin(theta_ij),
+              np.cos(theta_i)*np.sin(theta_ij)+np.sin(theta_i)*np.cos(theta_ij),
+              0
+             ]
 
-    A = np.column_stack([eij_xi, eij_yi, eij_theta_i])
+    eij_yi = [-np.sin(theta_i)*np.cos(theta_ij)-np.cos(theta_i)*np.sin(theta_ij),
+              np.sin(theta_i)*np.sin(theta_ij)-np.cos(theta_i)*np.cos(theta_ij),
+              0
+             ]
 
-    eij_xj = np.array([np.cos(theta_i)*np.cos(theta_ij) - np.sin(theta_i)*np.sin(theta_ij),
-                       np.sin(theta_i)*np.cos(theta_ij) + np.cos(theta_i)*np.sin(theta_ij),
-                       0])
-    eij_yj = np.array([-np.cos(theta_i)*np.sin(theta_ij) - np.sin(theta_i)*np.cos(theta_ij),
-                       np.sin(theta_i)*np.sin(theta_ij) - np.cos(theta_i)*np.cos(theta_ij),
-                       0])
-    eij_theta_j = np.array([0, 0, 1])
+    eij_theta_i = [-(xj - xi)*(np.sin(theta_i)*np.cos(theta_ij)+np.cos(theta_i)*np.sin(theta_ij))+
+                   (yj - yi)*(np.cos(theta_i)*np.cos(theta_ij)-np.sin(theta_i)*np.sin(theta_ij)),
+                   (xj - xi)*(np.sin(theta_i)*np.sin(theta_ij) - np.cos(theta_i)*np.cos(theta_ij))-
+                   (yj - yi)*(np.cos(theta_i)*np.sin(theta_ij)+np.sin(theta_i)*np.cos(theta_ij)),
+                   -1
+                  ]
 
-    B = np.column_stack([eij_xj, eij_yj, eij_theta_j])
+    # Construct Jacobian block A with respect to x1
+    A = np.column_stack((eij_xi, eij_yi, eij_theta_i))
+
+    # Compute the partial derivative with respect to pose x2
+    eij_xj = [np.cos(theta_i)*np.cos(theta_ij)-np.sin(theta_i)*np.sin(theta_ij),
+              -np.cos(theta_i)*np.sin(theta_ij)-np.sin(theta_i)*np.cos(theta_ij),
+              0
+             ]
+
+    eij_yj = [np.sin(theta_i)*np.cos(theta_ij)+np.cos(theta_i)*np.sin(theta_ij),
+              -np.sin(theta_i)*np.sin(theta_ij)+np.cos(theta_i)*np.cos(theta_ij),
+              0
+             ]
+
+    eij_theta_j = [0, 0, 1]
+
+    # Construct Jacobian block B with respect to x2
+    B = np.column_stack((eij_xj, eij_yj, eij_theta_j))
 
     return e, A, B
 

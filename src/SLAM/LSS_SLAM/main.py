@@ -1,10 +1,6 @@
 # Standard
-import os
-import time
 # External
 import numpy as np
-from scipy.io import loadmat
-import pandas as pd
 # Local
 from .data import load_data
 from .functions import compute_global_error, linearize_and_solve
@@ -15,7 +11,11 @@ def main():
     # Assuming plot_graph, compute_global_error, linearize_and_solve, and other necessary functions are defined
 
     # Load the graph
-    dataset = "simulation-pose-landmark"
+    datasets = ["simulation-pose-landmark",
+                "simulation-pose-pose",
+                "intel",
+                "dlr"]
+    dataset = datasets[3]
     datapath = "exercises/16_lsslam_framework/data/" + dataset + ".dat"
     x, edges, idLookup = load_data(datapath)
     data = {

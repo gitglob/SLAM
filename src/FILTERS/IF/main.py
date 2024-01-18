@@ -35,7 +35,7 @@ def main():
     state = np.vstack((x[0], y[0], theta[0])) # x, y, θ
 
     # Initialize state covariance
-    state_cov = np.eye(3) * 1e-12
+    state_cov = np.eye(4) * 1e-12
 
     # Convert from moment to canonical form
     inf_matrix, inf_vector = moment2canonical(state_cov, state)
