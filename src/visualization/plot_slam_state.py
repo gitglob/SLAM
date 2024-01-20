@@ -230,7 +230,7 @@ def drawrobot(xvec, color, robot_type=2, B=0.4, L=0.6):
     else:
         print("Unsupported robot type")
 
-def plot_slam_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, observed_landmarks, slam_type):
+def plot_slam_state(mu, state_cov, timestep, landmarks, map, observed_landmarks, slam_type):
     """
     Visualizes the state of the EKF SLAM algorithm.
 
@@ -245,7 +245,7 @@ def plot_slam_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, obse
         Dictionary containing the ground truth positions of landmarks in the map.
     timestep : int
         The current time step for which this state represents.
-    all_seen_landmarks : list of bool
+    map : list of bool
         List indicating which landmarks have been observed up to the current time step.
     observed_landmarks : list of tuples
         List of observations made at the current time step. Each tuple contains (landmark ID, observation data).
@@ -260,7 +260,6 @@ def plot_slam_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, obse
       - `landmarks`: Ground truth landmark positions (black `+` markers).
       - Estimated landmark positions (blue `o` markers).
       - Observations made at the current time step (lines between robot and observed landmarks).
-    - The function assumes `drawprobellipse` and `drawrobot` functions are defined and available.
     - The plot is saved as a PNG file in the 'results/slam/' directory.
     """
 
@@ -278,8 +277,8 @@ def plot_slam_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, obse
     for i in range(len(landmarks["xy"])):
         plt.scatter(landmarks["xy"][i][0], landmarks["xy"][i][1], c='k', marker='+', s=100) # label=f"Landmark #{landmarks['ids'][i]} - G.T."
 
-    if slam_type == "EKF":
-        for l in all_seen_landmarks:
+    if slam_type == "EKF" or slam_type == "SEIF":
+        for l in map:
             # Draw the curently observed landmarks
             plt.scatter(mu[2*l + 3], mu[2*l + 4], c='b', marker='o', s=10) # , label=f"Landmark #{l} - state"
 
@@ -293,7 +292,7 @@ def plot_slam_state(mu, state_cov, timestep, landmarks, all_seen_landmarks, obse
             mY = mu[2*l + 4]
             plt.plot([mu[0], mX], [mu[1], mY], '--k', linewidth=1) # label=f"Landmark #{l} - observation X"
     elif slam_type == "UKF":
-        for l_idx in range(len(all_seen_landmarks)):
+        for l_idx in range(len(map)):
             plt.scatter(mu[2*l_idx + 3], mu[2*l_idx + 4], c='b', marker='o', s=10)
             drawprobellipse(mu[2*l_idx + 3 : 2*l_idx + 5], state_cov[2*l_idx + 3 : 2*l_idx + 5, 2*l_idx + 3 : 2*l_idx + 5], 0.6, 'b')
         for l_idx in range(len(observed_landmarks)):

@@ -2,12 +2,11 @@
 import numpy as np
 from numpy.linalg import inv
 # Local
-from src.utils import velocityModel
-from . import NUM_LANDMARKS
+from src.utils import velocityModel, normalize_angle
 
 
 # Step 1
-def getFx():
+def getFx(NUM_LANDMARKS):
     """Calculates the Fx matrix, which is essential to apply the motion model to the pose state, and not the landmarks.
     Fx maps the robot's state from a low dimensional space, to a high dimensional space."""
 
@@ -19,20 +18,29 @@ def getFx():
     return Fx
 
 # Step 2
-def get_delta(state, u, dt):
+def get_delta(state, displacement):
     """Gets the displacement based on the motion model."""
 
+    # Extract linear and rotational displacement
+    dtheta1, dr, dtheta2 = displacement
+    
+    # Extract heading
+    theta = state[2]
+
     # Displacement from the velocity model - circular arc model
-    delta = velocityModel(state, u, dt)
+    dx = dr * np.cos(theta + dtheta1)
+    dy = dr * np.sin(theta + dtheta1)
+    dtheta = dtheta1 + dtheta2
+    delta = np.vstack((dx, dy, dtheta))
 
     return delta
 
 # Step 3
-def getDelta(state, u, dt):
+def getDelta(state, displacement):
     """Calculates the Jacobian of the motion model at the given state under the current control input."""
 
-    # Extract linear velocity and yaw rate
-    v, omega = u
+    # Extract linear and rotational displacement
+    dtheta1, dr, _ = displacement
 
     # Extract heading
     theta = state[2]
@@ -40,21 +48,15 @@ def getDelta(state, u, dt):
     # Initialize the Jacobian with a zero matrix
     Delta = np.zeros((3, 3))
 
-    # Handle the case when omega is zero (or close to zero) - straight line motion
-    epsilon = 1e-6
-    if omega < epsilon:
-        Delta[0, 2] = -v * np.sin(theta) * dt
-        Delta[1, 2] = v * np.cos(theta) * dt
-    else:
-        # Jacobian elements for the general motion model (circular arc model)
-        Delta[0, 2] = (-v/omega) * np.cos(theta) + (v/omega) * np.cos(theta + omega*dt)
-        Delta[1, 2] = (-v/omega) * np.sin(theta) + (v/omega) * np.sin(theta + omega*dt)
+    # Jacobian of the motion model
+    Delta[0,2] = -dr * np.sin(theta + dtheta1)
+    Delta[1,2] = dr * np.cos(theta + dtheta1)
 
     return Delta
 
 # Step 4
 def getPsi(Fx, Delta):
-    I = np.eye(3 + 2*NUM_LANDMARKS)
+    I = np.eye(3)
     Psi = Fx.T @ (inv(I+Delta) - I) @ Fx
 
     return Psi
@@ -75,6 +77,8 @@ def getPhi(inf_matrix, lamda):
 def getKappa(Phi, Fx, process_cov):
     kappa = Phi@Fx.T @ inv(inv(process_cov) + Fx@Phi@Fx.T) @ Fx@Phi
 
+    return kappa
+
 # Step 8
 def predictInfMatrix(Phi, kappa):
     expected_inf_matrix = Phi - kappa
@@ -90,14 +94,15 @@ def predictInfVector(inf_vector, lamda, kappa, state, expected_inf_matrix, Fx, d
 # Step 10
 def predictState(state, Fx, delta):
     expected_state = state + Fx.T@delta
+    expected_state[2] = normalize_angle(expected_state[2])
 
     return expected_state
 
 # Motion Update
-def update_motion(inf_vector, inf_matrix, state, u, process_cov, dt):
-    Fx = getFx()
-    delta = get_delta(state, u, dt)
-    Delta = getDelta(state, u, dt)
+def update_motion(inf_vector, inf_matrix, state, displacement, process_cov, NUM_LANDMARKS):
+    Fx = getFx(NUM_LANDMARKS)
+    delta = get_delta(state, displacement)
+    Delta = getDelta(state, displacement)
     Psi = getPsi(Fx, Delta)
     lamda = getLamda(Psi, inf_matrix)
     Phi = getPhi(inf_matrix, lamda)
@@ -106,4 +111,4 @@ def update_motion(inf_vector, inf_matrix, state, u, process_cov, dt):
     expected_inf_vector = predictInfVector(inf_vector, lamda, kappa, state, expected_inf_matrix, Fx, delta)
     expected_state = predictState(state, Fx, delta)
 
-    return expected_inf_matrix, expected_inf_vector, expected_state
+    return expected_inf_vector, expected_inf_matrix, expected_state

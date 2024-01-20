@@ -59,16 +59,3 @@ def detect_landmarks(prev_inf_matrix, current_inf_matrix, threshold=1e-5):
             new_active_landmarks.add(i)
 
     return passive_landmarks, new_active_landmarks, active_landmarks
-
-def pseudo_observe_landmarks(NUM_LANDMARKS):
-    """
-    Get two unique random integers ranging from 0 to NUM_LANDMARKS-1.
-
-    Parameters:
-    - NUM_LANDMARKS (int): The upper limit for the random integers.
-
-    Returns:
-    - tuple: Two unique random integers.
-    """
-
-    return tuple(random.sample(range(NUM_LANDMARKS), 2))
