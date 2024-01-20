@@ -21,6 +21,16 @@ lectures
 
 # Output
 results/*
+!results/other/gridmaps/final.png
+!results/other/odom_calib
+!results/other/unscented_transform
+!results/filters/EIF/trajectory.png
+!results/filters/EKF/trajectory.png
+!results/filters/UKF/trajectory.png
+!results/filters/PF/resampling.png
+!results/filters/PF/motion/trajectory.gif
+!results/SLAM/**/*.gif
+!results/SLAM/LS/*/final.png
 
 # Redirected terminal output
 *.txt
