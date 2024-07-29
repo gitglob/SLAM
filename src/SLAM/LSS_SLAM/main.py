@@ -8,8 +8,6 @@ from .visualize import plot_graph
 
 
 def main():
-    # Assuming plot_graph, compute_global_error, linearize_and_solve, and other necessary functions are defined
-
     # Load the graph
     datasets = ["simulation-pose-landmark",
                 "simulation-pose-pose",
