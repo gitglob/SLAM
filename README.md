@@ -22,6 +22,36 @@ This repository follows the 2013/2014 course on SLAM by Cyrill Stachniss.
 - FAST SLAM: `python -m src.SLAM.FAST_SLAM.main`
 - LSS SLAM: `python -m src.SLAM.LSS_SLAM.main`
 
+# Results
+
+<table>
+  <tr>
+    <td style="text-align: center;">
+      <img src="./results/slam/EKF/trajectory.gif" width="300" />
+      <br>
+      <strong>EKF SLAM</strong>
+    </td>
+    <td style="text-align: center;">
+      <img src="./results/slam/UKF/trajectory.gif" width="300" />
+      <br>
+      <strong>UKF SLAM</strong>
+    </td>
+  </tr>
+  <tr>
+    <td style="text-align: center;">
+      <img src="./results/slam/FAST/trajectory.gif" width="300" />
+      <br>
+      <strong>FAST SLAM</strong>
+    </td>
+    <td style="text-align: center;">
+      <img src="./results/slam/LS/dlr/trajectory.gif" width="300" />
+      <br>
+      <strong>Least Squares SLAM</strong>
+    </td>
+  </tr>
+</table>
+
+
 # Output
 
 The output robot trajectories after executing an algorithm will be found in `results`.

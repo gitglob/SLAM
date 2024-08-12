@@ -34,7 +34,7 @@ def main():
     EPSILON = 1e-4
 
     # Carry out the iterations
-    for i in range(num_iterations):
+    for i in range(1, num_iterations):
         print(f'Performing iteration {i}')
 
         dx = linearize_and_solve(data)

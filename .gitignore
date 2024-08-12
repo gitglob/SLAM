@@ -8,13 +8,13 @@
 *.ipynb_checkpoints
 
 # Virtual environment
-venv
+.venv
 
 # Material - pdfs
 material
 
 # Exercises
-exercises
+exercises/**
 
 # Lectures and material from the lectures - screenshots
 lectures
@@ -31,4 +31,6 @@ results/**/*.png
 !results/SLAM/LS/*/final.png
 
 # Redirected terminal output
-*.txt
+a.txt
+
+**/.gitkeep

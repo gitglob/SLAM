@@ -1,8 +1,39 @@
 # Standard
+import os
 # External
 import numpy as np
+from PIL import Image
 # Local
 
+
+def make_gif(directory, output_filename='trajectory.gif', duration=2000):
+    """
+    Creates a GIF from all step_*.png files in the specified directory.
+
+    Parameters
+    ----------
+    directory : str
+        The directory containing the step_*.png files.
+    output_filename : str, optional
+        The name of the output GIF file, by default 'trajectory.gif'.
+    duration : int, optional
+        The duration of each frame in the GIF in milliseconds, by default 500ms.
+    """
+    # Get list of all step_*.png files in the directory and sort them
+    images = sorted([img for img in os.listdir(directory) if img.startswith("step_") and img.endswith(".png")])
+
+    # Ensure there are images to process
+    if not images:
+        raise ValueError("No step_*.png files found in the specified directory.")
+
+    # Load images into a list
+    frames = [Image.open(os.path.join(directory, img)) for img in images]
+
+    # Save the frames as a GIF
+    gif_path = os.path.join(directory, output_filename)
+    frames[0].save(gif_path, format='GIF', append_images=frames[1:], save_all=True, duration=duration, loop=0)
+
+    print(f"GIF created at {gif_path}")
 
 def velocityModel(state, u, dt):
     """
